@@ -9,8 +9,8 @@ package com.saarthi.app
 sealed class Action {
     data class Say(val text: String) : Action()
     data class Call(val contact: Contact) : Action()
-    data class WhatsApp(val contact: Contact) : Action()
-    data class Sms(val contact: Contact) : Action()
+    data class WhatsApp(val contact: Contact, val message: String = "") : Action()
+    data class Sms(val contact: Contact, val message: String = "") : Action()
     data class Torch(val on: Boolean?) : Action()     // null = toggle
     data class YouTube(val query: String) : Action()
     data class Volume(val dir: String) : Action()      // up / down / max

@@ -21,7 +21,10 @@ data class Settings(
     var appName: String = "Saarthi",
     var lang: String = "en-IN",       // BCP-47 for speech + TTS
     var rate: Float = 0.8f,           // slow, friendly
-    var userName: String = ""         // who to greet
+    var userName: String = "",        // who to greet
+    var groqKey: String = "",         // free Groq API key (Llama + Whisper)
+    var useAI: Boolean = true,        // use Llama to understand (when key + online)
+    var useWhisper: Boolean = true    // use Whisper to hear (when key + online)
 )
 
 /**
@@ -40,13 +43,18 @@ object Store {
             appName = o.optString("appName", "Saarthi"),
             lang = o.optString("lang", "en-IN"),
             rate = o.optDouble("rate", 0.8).toFloat(),
-            userName = o.optString("userName", "")
+            userName = o.optString("userName", ""),
+            // fall back to the optional key baked in from local.properties
+            groqKey = o.optString("groqKey", "").ifBlank { BuildConfig.GROQ_KEY },
+            useAI = o.optBoolean("useAI", true),
+            useWhisper = o.optBoolean("useWhisper", true)
         )
     }
     fun saveSettings(ctx: Context, s: Settings) {
         val o = JSONObject()
             .put("appName", s.appName).put("lang", s.lang)
             .put("rate", s.rate.toDouble()).put("userName", s.userName)
+            .put("groqKey", s.groqKey).put("useAI", s.useAI).put("useWhisper", s.useWhisper)
         sp(ctx).edit().putString("settings", o.toString()).apply()
     }
 

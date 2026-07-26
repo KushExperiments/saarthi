@@ -30,6 +30,30 @@ For the real thing, use the Android app.
 
 ---
 
+## 🧠 Turn on the AI brain (optional, free)
+
+Out of the box Saarthi uses the phone's own free voice engine and understands
+commands by keyword in many languages. To *truly understand any language* and let
+the elder speak freely (even Hinglish or mixed languages), add a **free Groq key**:
+
+1. Go to **console.groq.com** → sign up (free) → create an **API key** (`gsk_...`).
+2. In the app: ⚙️ Setup → **AI brain** → paste the key.
+
+This unlocks:
+- **Llama 3.3 70B** — understands free-form speech in any language and figures out
+  what the elder wants (and can even write the WhatsApp/SMS message for them).
+- **Whisper (whisper-large-v3)** — much better hearing across ~99 languages. When
+  online it records your voice and transcribes it; **offline it automatically falls
+  back** to the phone's built-in recognizer. Tap the mic to start, tap again to finish.
+
+Both run on Groq's **free** tier. No key? Everything still works offline with the
+phone's voice. Toggles for Llama and Whisper are in Setup.
+
+> Privacy: with the AI on, the spoken text/audio is sent to Groq to be understood.
+> With it off, nothing leaves the phone.
+
+---
+
 ## 📲 Get the app (easiest — no computer setup)
 
 1. Create a **free GitHub account** and push this project to a repo (see below).
@@ -114,11 +138,14 @@ saarthi/
 ```
 
 ## ⚠️ Honest limits
-- Truly understanding **any** spoken language perfectly needs a cloud AI. Saarthi
-  uses the phone's free speech engine and matches command words in many languages;
-  pick the elder's language in Setup for best results.
+- Truly understanding **any** spoken language needs a cloud AI. Add a free Groq key
+  (see above) for Llama + Whisper; without it, Saarthi matches command words in many
+  languages using the phone's free voice — pick the elder's language in Setup.
+- The AI needs internet; offline, Saarthi falls back to the phone's own voice.
 - Toggling Wi-Fi silently is blocked by modern Android — Saarthi can open the Wi-Fi
   screen instead.
 - Direct calling requires granting the Phone permission.
+- No app can send a WhatsApp/SMS *silently* — Saarthi prepares the message (AI can
+  write it) and opens it ready to send.
 
 Made with care for the people who cared for us. 💚

@@ -25,6 +25,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /** The languages Saarthi can listen and speak in. Add more freely. */
@@ -63,6 +68,9 @@ fun App(voice: Voice) {
     val contacts = remember { mutableStateListOf<Contact>().apply { addAll(Store.contacts(ctx)) } }
     var heard by remember { mutableStateOf("") }
     var listening by remember { mutableStateOf(false) }
+    var recording by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val recorder = remember { AudioRecorder(ctx) }
 
     // Ask for the important permissions once.
     val perms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
@@ -75,33 +83,98 @@ fun App(voice: Voice) {
 
     fun say(t: String) { heard = t; voice.speak(t) }
 
-    // Runs a parsed command.
-    fun run(a: Action) {
+    fun resolveContact(person: String): Contact? {
+        if (person.isBlank()) return null
+        val p = person.lowercase()
+        return contacts.firstOrNull { it.name.lowercase() == p }
+            ?: contacts.firstOrNull { p.contains(it.name.lowercase()) || it.name.lowercase().contains(p) }
+    }
+
+    // Perform an action. `spoken` (if given) is what to say aloud, e.g. the AI's reply.
+    fun execute(a: Action, spoken: String?) {
         when (a) {
-            is Action.Say -> say(a.text)
-            is Action.Call -> { say("Calling ${a.contact.name}."); DeviceControl.call(ctx, a.contact.phone) }
-            is Action.WhatsApp -> { say("Opening WhatsApp for ${a.contact.name}."); DeviceControl.whatsapp(ctx, a.contact.phone) }
-            is Action.Sms -> { say("Message to ${a.contact.name}."); DeviceControl.sms(ctx, a.contact.phone) }
-            is Action.Torch -> { val on = a.on ?: true; DeviceControl.setTorch(ctx, on); say(if (on) "Torch on." else "Torch off.") }
-            is Action.YouTube -> { say(if (a.query.isBlank()) "Opening YouTube." else "Playing ${a.query}."); DeviceControl.youtube(ctx, a.query) }
-            is Action.Volume -> { when (a.dir) { "up" -> DeviceControl.volumeUp(ctx); "down" -> DeviceControl.volumeDown(ctx); else -> DeviceControl.volumeMax(ctx) }; say("Done.") }
+            is Action.Say -> say(spoken ?: a.text)
+            is Action.Call -> { say(spoken ?: "Calling ${a.contact.name}."); DeviceControl.call(ctx, a.contact.phone) }
+            is Action.WhatsApp -> { say(spoken ?: "Opening WhatsApp for ${a.contact.name}."); DeviceControl.whatsapp(ctx, a.contact.phone, a.message) }
+            is Action.Sms -> { say(spoken ?: "Message to ${a.contact.name}."); DeviceControl.sms(ctx, a.contact.phone, a.message) }
+            is Action.Torch -> { val on = a.on ?: true; DeviceControl.setTorch(ctx, on); say(spoken ?: if (on) "Torch on." else "Torch off.") }
+            is Action.YouTube -> { say(spoken ?: if (a.query.isBlank()) "Opening YouTube." else "Playing ${a.query}."); DeviceControl.youtube(ctx, a.query) }
+            is Action.Volume -> { when (a.dir) { "up" -> DeviceControl.volumeUp(ctx); "down" -> DeviceControl.volumeDown(ctx); else -> DeviceControl.volumeMax(ctx) }; say(spoken ?: "Done.") }
             Action.MedicineTaken -> {
                 val done = markEarliestDue(ctx, meds)
-                say(if (done) "Well done. I marked your medicine as taken." else "Okay. No medicine is due right now.")
+                say(spoken ?: if (done) "Well done. I marked your medicine as taken." else "Okay. No medicine is due right now.")
             }
-            Action.OpenMedicines -> { screen = Screen.MEDS }
-            Action.OpenContacts -> { say("Who should I contact? Please add them here."); screen = Screen.CONTACTS }
-            Action.Help -> { say("I can help you. Tap the green microphone and just talk. Say: call, torch, or YouTube."); }
+            Action.OpenMedicines -> { spoken?.let { say(it) }; screen = Screen.MEDS }
+            Action.OpenContacts -> { say(spoken ?: "Who should I contact? Please add them here."); screen = Screen.CONTACTS }
+            Action.Help -> { say(spoken ?: "I can help you. Tap the green microphone and just talk. Say: call, torch, or YouTube.") }
         }
     }
 
-    fun startListening() {
-        listening = true; heard = ""
+    // Turn the AI's understanding into an action.
+    fun mapIntent(i: AiIntent): Action = when (i.action) {
+        "call" -> resolveContact(i.person)?.let { Action.Call(it) } ?: Action.OpenContacts
+        "whatsapp" -> resolveContact(i.person)?.let { Action.WhatsApp(it, i.message) } ?: Action.OpenContacts
+        "sms" -> resolveContact(i.person)?.let { Action.Sms(it, i.message) } ?: Action.OpenContacts
+        "torch_on" -> Action.Torch(true)
+        "torch_off" -> Action.Torch(false)
+        "youtube" -> Action.YouTube(i.query)
+        "volume_up" -> Action.Volume("up")
+        "volume_down" -> Action.Volume("down")
+        "volume_max" -> Action.Volume("max")
+        "medicine_taken" -> Action.MedicineTaken
+        "open_medicines" -> Action.OpenMedicines
+        "help" -> Action.Help
+        else -> Action.Say(i.reply.ifBlank { "Okay." })
+    }
+
+    // Understand a transcript: AI (Llama) when online + key, else keyword matching.
+    fun understand(text: String) {
+        val s = Store.settings(ctx)
+        if (s.groqKey.isNotBlank() && s.useAI && isOnline(ctx)) {
+            heard = "…understanding"
+            scope.launch {
+                val intent = withContext(Dispatchers.IO) {
+                    Groq.understand(s.groqKey, text, contacts.map { it.name }, s.lang)
+                }
+                if (intent != null) execute(mapIntent(intent), intent.reply.ifBlank { null })
+                else execute(CommandParser.parse(text, contacts), null)
+            }
+        } else execute(CommandParser.parse(text, contacts), null)
+    }
+
+    fun builtInListen() {
+        listening = true; heard = "Listening…"
         voice.listen(
-            onHeard = { t -> heard = "“$t”"; run(CommandParser.parse(t, contacts)) },
+            onHeard = { t -> heard = "“$t”"; understand(t) },
             onDone = { listening = false },
             onError = { e -> heard = e; listening = false }
         )
+    }
+
+    fun whisperReady(): Boolean {
+        val s = Store.settings(ctx)
+        return s.groqKey.isNotBlank() && s.useWhisper && isOnline(ctx)
+    }
+
+    fun onTalk() {
+        // Second tap: stop recording and send to Whisper.
+        if (recording) {
+            recording = false; listening = true; heard = "…understanding"
+            val file = recorder.stop()
+            scope.launch {
+                val key = Store.settings(ctx).groqKey
+                val text = withContext(Dispatchers.IO) { if (file != null) Groq.transcribe(key, file) else null }
+                listening = false
+                if (text.isNullOrBlank()) { heard = "Let me try again."; builtInListen() }
+                else { heard = "“$text”"; understand(text) }
+            }
+            return
+        }
+        // First tap: record for Whisper if ready, else use the phone's recognizer.
+        if (whisperReady()) {
+            if (recorder.start()) { recording = true; heard = "Listening… tap the button again when you finish." }
+            else builtInListen()
+        } else builtInListen()
     }
 
     // greet once
@@ -111,16 +184,16 @@ fun App(voice: Voice) {
     }
 
     when (screen) {
-        Screen.HOME -> HomeScreen(settings, heard, listening,
-            onTalk = { startListening() },
+        Screen.HOME -> HomeScreen(settings, heard, listening, recording,
+            onTalk = { onTalk() },
             onCard = { act ->
                 when (act) {
                     "meds" -> screen = Screen.MEDS
                     "call" -> screen = Screen.CONTACTS
-                    "torch" -> run(Action.Torch(null))
+                    "torch" -> execute(Action.Torch(null), null)
                     "youtube" -> DeviceControl.youtube(ctx, "")
-                    "help" -> run(Action.Help)
-                    "louder" -> run(Action.Volume("up"))
+                    "help" -> execute(Action.Help, null)
+                    "louder" -> execute(Action.Volume("up"), null)
                 }
             },
             onSetup = { settings = Store.settings(ctx); screen = Screen.SETUP })
@@ -146,6 +219,13 @@ private fun refresh(ctx: android.content.Context, meds: MutableList<Medicine>) {
     meds.clear(); meds.addAll(Store.medicines(ctx))
 }
 
+private fun isOnline(ctx: android.content.Context): Boolean {
+    val cm = ctx.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+    val net = cm.activeNetwork ?: return false
+    val cap = cm.getNetworkCapabilities(net) ?: return false
+    return cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
+
 /** Mark the earliest due-but-not-taken dose as taken. Returns true if one was found. */
 private fun markEarliestDue(ctx: android.content.Context, meds: MutableList<Medicine>): Boolean {
     val now = Calendar.getInstance()
@@ -160,7 +240,7 @@ private fun markEarliestDue(ctx: android.content.Context, meds: MutableList<Medi
 
 /* ----------------------------- HOME ----------------------------- */
 @Composable
-fun HomeScreen(s: Settings, heard: String, listening: Boolean,
+fun HomeScreen(s: Settings, heard: String, listening: Boolean, recording: Boolean,
                onTalk: () -> Unit, onCard: (String) -> Unit, onSetup: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -173,8 +253,14 @@ fun HomeScreen(s: Settings, heard: String, listening: Boolean,
         Button(onClick = onTalk, shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth().height(150.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🎤", fontSize = 56.sp)
-                Text(if (listening) "Listening… speak now" else "Tap and talk to me", fontSize = 22.sp)
+                Text(if (recording) "🛑" else "🎤", fontSize = 56.sp)
+                Text(
+                    when {
+                        recording -> "Tap here when you finish"
+                        listening -> "Listening…"
+                        else -> "Tap and talk to me"
+                    }, fontSize = 22.sp, textAlign = TextAlign.Center
+                )
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -312,9 +398,12 @@ fun SetupScreen(initial: Settings, voice: Voice, onBack: () -> Unit, onSave: (Se
     var lang by remember { mutableStateOf(initial.lang) }
     var rate by remember { mutableStateOf(initial.rate) }
     var userName by remember { mutableStateOf(initial.userName) }
+    var groqKey by remember { mutableStateOf(initial.groqKey) }
+    var useAI by remember { mutableStateOf(initial.useAI) }
+    var useWhisper by remember { mutableStateOf(initial.useWhisper) }
     var langOpen by remember { mutableStateOf(false) }
 
-    fun persist() = onSave(Settings(appName.ifBlank { "Saarthi" }, lang, rate, userName))
+    fun persist() = onSave(Settings(appName.ifBlank { "Saarthi" }, lang, rate, userName, groqKey.trim(), useAI, useWhisper))
 
     ScreenScaffold("Setup", onBack) {
         SetupCard("Assistant's name (you can change it)") {
@@ -343,6 +432,21 @@ fun SetupScreen(initial: Settings, voice: Voice, onBack: () -> Unit, onSave: (Se
         SetupCard("Screen brightness control") {
             if (DeviceControl.canWriteSettings(ctx)) Text("✅ Allowed", color = MaterialTheme.colorScheme.primary)
             else Button(onClick = { DeviceControl.requestWriteSettings(ctx) }) { Text("Allow brightness control") }
+        }
+        SetupCard("AI brain (free Groq key — Llama + Whisper)") {
+            OutlinedTextField(groqKey, { groqKey = it; persist() }, singleLine = true,
+                placeholder = { Text("Paste your Groq API key (gsk_...)") }, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = useAI, onCheckedChange = { useAI = it; persist() })
+                Spacer(Modifier.width(10.dp)); Text("Understand any language (Llama)", fontSize = 16.sp)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = useWhisper, onCheckedChange = { useWhisper = it; persist() })
+                Spacer(Modifier.width(10.dp)); Text("Better hearing (Whisper)", fontSize = 16.sp)
+            }
+            Text("Free key at console.groq.com. Without a key, Saarthi still works offline using the phone's own voice.",
+                fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
         }
         Text("Tip: set up medicines and people here, then hand the phone to your elder. They only need the big buttons and the 🎤.",
             fontSize = 16.sp, modifier = Modifier.padding(top = 12.dp))
