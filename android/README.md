@@ -1,11 +1,12 @@
-# Saarthi — Android Foundation (M-001)
+# Saarthi — Android Foundation (M-001, M-002)
 
-*This is the Engineering Master Plan's M-001 module: "Create the enterprise
-project skeleton." It follows [ARCHITECTURE.md](../ARCHITECTURE.md)'s module
-boundaries and [ENGINEERING_MASTER_PLAN.md](../ENGINEERING_MASTER_PLAN.md)'s
-technology selections. Per M-001's own scope, there is deliberately no AI,
-no speech, no reminders, and no real UI feature here yet — those are later
-modules, built on this foundation.*
+*M-001: "Create the enterprise project skeleton." M-002: "Authentication &
+App Lock" — resolving the auth gap flagged open across four of the six
+strategic documents and ranked recommendation #1 in the Engineering Master
+Plan. Follows [ARCHITECTURE.md](../ARCHITECTURE.md)'s module boundaries and
+[ENGINEERING_MASTER_PLAN.md](../ENGINEERING_MASTER_PLAN.md)'s technology
+selections. Still deliberately no AI, speech, reminders, or real feature
+screens beyond the lock gate itself — those are later modules.*
 
 **This is a fresh, independent Gradle project.** The existing `../app/`
 prototype (working reminders, voice, AI brain) is completely untouched.
@@ -21,13 +22,30 @@ android/
 ├── app/                     # Hilt Application, MainActivity, NavHost — the only module allowed to assemble everything
 ├── core/
 │   ├── designsystem/         # SaarthiTheme, Color, Type, Shape — the product's actual warm-green identity, codified
-│   ├── common/                # DispatcherProvider, Outcome<T> — zero framework dependencies beyond coroutines
+│   ├── common/                # DispatcherProvider (now Hilt-bound), Outcome<T>
 │   ├── navigation/              # SaarthiRoute + FeatureNavigation contracts every feature implements
-│   ├── ui/                        # SaarthiButton, SaarthiCard — shared composables built on designsystem tokens
-│   └── testing/                    # MainDispatcherRule + test dependency bundle (JUnit4, Turbine, MockK, Robolectric)
+│   ├── ui/                        # SaarthiButton, SaarthiCard, NumericKeypad — shared composables on designsystem tokens
+│   ├── security/                    # M-002: PIN hashing, AuthRepository, AuthGate, lock/setup screens
+│   └── testing/                      # MainDispatcherRule, TestDispatcherProvider + test bundle (JUnit4, Turbine, MockK, Robolectric)
 └── feature/
-    └── placeholder/                 # ONE screen, proving Hilt DI + Navigation + Design System resolve end-to-end
+    └── placeholder/                   # ONE screen, proving Hilt DI + Navigation + Design System resolve end-to-end
 ```
+
+## M-002 — how the lock actually works
+
+- **PIN only, biometric deferred** (see deviations below) — a 4-digit PIN
+  entered on a large on-screen keypad (`NumericKeypad`, not the system's
+  small default keyboard).
+- **Never stores the raw PIN.** `PinHasher` (pure JVM, zero Android
+  dependency) salts and SHA-256-hashes it; only the salt+hash pair is
+  persisted, inside `EncryptedSharedPreferences` (AES-256, Keystore-backed
+  master key) — Engineering Master Plan §9's security requirement.
+- **`AuthGate`** is the single seam every later feature sits behind —
+  `MainActivity` wraps `SaarthiNavHost` in it, so nothing behind the lock
+  is ever composed until `AuthUiState.Unlocked` is reached. No feature
+  module needs to know the gate exists.
+- First run shows `PinSetupScreen` (choose, then confirm); every run after
+  that shows `LockScreen` until the correct PIN is entered.
 
 **Dependency rule** (Architecture §3, restated): arrows only point from
 `app`/`feature:*` toward `core:*`, never the reverse. `core:*` modules do
@@ -75,6 +93,19 @@ now applied to the app's own feature modules.
   actually assembles and the Compose UI test renders correctly — a true
   `@HiltAndroidTest` at the `app` level needs a custom test `Application`
   and test runner; deferred for the same reason as above.
+- **(M-002) PIN-only, biometric deferred.** `androidx.biometric.BiometricPrompt`
+  needs a `FragmentActivity` and real callback wiring I couldn't verify
+  compiles correctly without a build. There's also a real product argument
+  for PIN-first here regardless: fingerprint sensors are often less
+  reliable on elderly skin, and Philosophy's "simplicity over features"
+  favors one clear mechanism over two. Biometric-as-a-convenience-layer is
+  a clean, well-scoped follow-up.
+- **(M-002) No test for `EncryptedPrefsAuthRepository` itself.** `PinHasher`
+  (the interesting logic) has thorough pure-JVM tests, and `AuthViewModel`
+  is tested against a `FakeAuthRepository` — but the thin Android-Keystore
+  integration layer genuinely needs an emulator or careful Robolectric
+  shadow configuration to verify, which carries the same risk as the
+  deferred instrumented tests above. Same category of deferral, not a new one.
 
 ## Definition of Done — M-001
 
@@ -93,3 +124,36 @@ now applied to the app's own feature modules.
 Out of scope for M-001, by design: AI, speech, reminders, and any real UI
 feature — those are M-002 and beyond, per the Engineering Master Plan's
 24-month roadmap.
+
+## Definition of Done — M-002
+
+- [x] PIN can be set on first run (`PinSetupScreen`) and never leaves the
+      device — only a salted SHA-256 hash is persisted, never the raw PIN
+- [x] Returning to the app shows `LockScreen`, and only the correct PIN
+      reaches `AuthUiState.Unlocked`
+- [x] `AuthGate` wraps `MainActivity`'s entire feature `NavHost` — no
+      feature module (`feature:placeholder` or any future one) needed any
+      code change to sit behind the lock
+- [x] Storage is Keystore-backed (`EncryptedSharedPreferences`, AES-256) —
+      resolves Engineering Master Plan §9's authentication mitigation
+- [x] `PinHasher` unit tests cover: correct PIN matches, incorrect PIN is
+      rejected, salt is random per call, raw PIN never appears in stored
+      output
+- [x] `AuthViewModel` unit tests cover all four states (`Loading` transient,
+      `NeedsSetup`, `Locked` with and without an error, `Unlocked`) via a
+      `FakeAuthRepository` — no Android framework needed to verify this logic
+- [ ] **First CI run for this change reviewed by a human** — same standing
+      rule as M-001; this checklist is not the verification, a green Actions
+      run is
+- [ ] Biometric unlock (deferred — see "Known, deliberate deviations")
+- [ ] Instrumented test for `EncryptedPrefsAuthRepository` against a real
+      Keystore (deferred — same category as M-001's deferred instrumented tests)
+- [ ] A "forgot PIN" / reset recovery flow — deliberately not built yet;
+      `AuthRepository.clearPin()` exists but is intentionally unwired to any
+      UI until a real recovery flow (likely caregiver-assisted) is designed,
+      so a person can't be accidentally locked out with no path back, but
+      also can't be socially-engineered into resetting the lock casually
+
+Out of scope for M-002, by design: everything M-001 already excluded, plus
+biometric auth, multi-user/caregiver-differentiated auth, and any cloud
+account system — auth here is fully local, single-user, on-device.

@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":core:navigation"))
     implementation(project(":core:ui"))
     implementation(project(":core:common"))
+    implementation(project(":core:security"))
     implementation(project(":feature:placeholder"))
 
     implementation(platform(libs.compose.bom))

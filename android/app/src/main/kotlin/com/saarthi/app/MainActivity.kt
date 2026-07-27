@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.saarthi.app.core.designsystem.SaarthiTheme
 import com.saarthi.app.core.navigation.FeatureNavigation
+import com.saarthi.app.core.security.AuthGate
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -31,7 +32,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             SaarthiTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SaarthiNavHost(featureNavigations)
+                    // Nothing behind the lock (no feature screen, no data)
+                    // is ever composed until AuthGate reaches Unlocked.
+                    AuthGate {
+                        SaarthiNavHost(featureNavigations)
+                    }
                 }
             }
         }
