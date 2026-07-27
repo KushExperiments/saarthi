@@ -2,6 +2,7 @@ package com.saarthi.app.core.common
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 
 /**
  * Indirection over [Dispatchers] so every module can be unit-tested with a
@@ -14,7 +15,7 @@ interface DispatcherProvider {
     val default: CoroutineDispatcher
 }
 
-class DefaultDispatcherProvider : DispatcherProvider {
+class DefaultDispatcherProvider @Inject constructor() : DispatcherProvider {
     override val main: CoroutineDispatcher = Dispatchers.Main
     override val io: CoroutineDispatcher = Dispatchers.IO
     override val default: CoroutineDispatcher = Dispatchers.Default
