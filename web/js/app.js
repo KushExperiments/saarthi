@@ -130,6 +130,54 @@ function findContact(t){
   return best;
 }
 
+/* ============================================================
+   WHISPER — record audio and transcribe in ANY language (Groq)
+   Far better than the browser recognizer, especially for Hindi.
+   ============================================================ */
+const Rec = {
+  mr:null, chunks:[], stream:null,
+  supported(){ return !!(navigator.mediaDevices && window.MediaRecorder); },
+  async start(){
+    this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    this.chunks = [];
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+    this.mr = mime ? new MediaRecorder(this.stream,{mimeType:mime}) : new MediaRecorder(this.stream);
+    this.mr.ondataavailable = e => { if(e.data && e.data.size) this.chunks.push(e.data); };
+    this.mr.start();
+  },
+  stop(){
+    return new Promise(res=>{
+      if(!this.mr){ res(null); return; }
+      this.mr.onstop = ()=>{
+        const blob = new Blob(this.chunks, {type:this.mr.mimeType||'audio/webm'});
+        this.stream.getTracks().forEach(t=>t.stop());
+        this.mr = null;
+        res(blob);
+      };
+      try{ this.mr.stop(); }catch{ res(null); }
+    });
+  }
+};
+
+async function whisperTranscribe(blob){
+  const key = state.settings.groqKey;
+  if(!key || !blob) return null;
+  const fd = new FormData();
+  fd.append('model','whisper-large-v3');
+  fd.append('response_format','json');
+  const lg = (state.settings.lang||'').split('-')[0];
+  if(lg && lg!=='en') fd.append('language', lg);   // hint helps Hindi etc.
+  fd.append('file', blob, 'voice.webm');
+  try{
+    const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method:'POST', headers:{ 'Authorization':'Bearer '+key }, body:fd
+    });
+    if(!r.ok) return null;
+    const j = await r.json();
+    return (j.text||'').trim();
+  }catch{ return null; }
+}
+
 /* ---------- AI brain (Groq Llama) — understands anything, answers questions ---------- */
 async function aiUnderstand(raw){
   const key = state.settings.groqKey;
@@ -188,7 +236,7 @@ function runIntent(i){
 /* Main entry: try the AI brain first (if a key is set), else keyword matching. */
 async function handleCommand(raw){
   if(state.settings.groqKey){
-    $('#heard').textContent = '…thinking';
+    setThinking(true);
     const intent = await aiUnderstand(raw);
     if(intent && intent.action){ runIntent(intent); return; }
     // AI failed (offline / bad key) — fall back to simple commands
@@ -368,7 +416,24 @@ function go(id){
   $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
   window.scrollTo(0,0);
 }
-function speakAndShow(text){ $('#heard').textContent = text; Voice.speak(text); }
+/* ---------- Conversation view (chat-like, like a real assistant) ---------- */
+function addMsg(role, text){
+  const c = $('#convo'); if(!c) return null;
+  const empty = $('#emptyState'); if(empty) empty.remove();
+  const b = document.createElement('div');
+  b.className = 'msg ' + role;
+  b.textContent = text;
+  c.appendChild(b); c.scrollTop = c.scrollHeight;
+  return b;
+}
+let typingEl = null;
+function setThinking(on){
+  if(on){ if(!typingEl){ typingEl = addMsg('saarthi typing', '•••'); } }
+  else if(typingEl){ typingEl.remove(); typingEl = null; }
+}
+function setStatus(t){ const s=$('#talkLabel'); if(s) s.textContent = t; }
+
+function speakAndShow(text){ setThinking(false); addMsg('saarthi', text); Voice.speak(text); }
 
 function renderMeds(){
   const box = $('#medList'); box.innerHTML='';
@@ -454,34 +519,61 @@ function openForm(title, fields, onSave){
 function fmt12(hm){ const [h,m]=hm.split(':').map(Number); const ap=h<12?'AM':'PM'; return `${(h%12)||12}:${pad(m)} ${ap}`; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function buzz(){ try{ navigator.vibrate && navigator.vibrate([300,150,300]); }catch{} }
-function toast(msg){ $('#heard').textContent = msg; }
+function toast(msg){ addMsg('saarthi', msg); }
 function notify(title, body){
   if(!('Notification' in window)) return;
   if(Notification.permission==='granted'){ try{ new Notification(title,{body,icon:'icons/icon.svg'});}catch{} }
 }
-function tickClock(){ const d=new Date(); $('#clock').textContent = `${(d.getHours()%12)||12}:${pad(d.getMinutes())} ${d.getHours()<12?'AM':'PM'}`; }
+function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); el.textContent = `${(d.getHours()%12)||12}:${pad(d.getMinutes())} ${d.getHours()<12?'AM':'PM'}`; }
 
 /* ============================================================
    WIRING
    ============================================================ */
-function wire(){
-  // talk button
-  $('#talkBtn').onclick = () => {
-    const b=$('#talkBtn'); b.classList.add('listening');
-    $('#talkLabel').textContent = 'Listening… speak now';
-    $('#heard').textContent='';
-    Voice.listen(
-      (best)=>{ $('#heard').textContent = '“'+best+'”'; handleCommand(best); },
-      ()=>{ b.classList.remove('listening'); $('#talkLabel').textContent='Tap and talk to me'; }
-    );
-  };
+/* ---------- Listening flow: Whisper (tap to start / tap to stop) or browser ---------- */
+let listenBusy = false;
+async function onTalk(){
+  const btn = $('#talkBtn');
+  if(btn.classList.contains('listening')){
+    if(btn.dataset.mode === 'whisper') await finishWhisper();   // stop & transcribe
+    return;
+  }
+  if(listenBusy) return;
+  if(state.settings.groqKey && Rec.supported()){
+    try{
+      await Rec.start();
+      btn.classList.add('listening'); btn.dataset.mode = 'whisper';
+      setStatus('Listening… tap to stop');
+    }catch(e){ browserListen(); }
+  } else browserListen();
+}
+async function finishWhisper(){
+  const btn = $('#talkBtn'); btn.classList.remove('listening'); btn.dataset.mode='';
+  listenBusy = true; setStatus('One moment…'); setThinking(true);
+  const blob = await Rec.stop();
+  const text = await whisperTranscribe(blob);
+  listenBusy = false; setStatus('Tap to talk');
+  if(text){ addMsg('you', text); await handleCommand(text); }
+  else { setThinking(false); addMsg('saarthi', "I could not hear that. Let me try another way."); browserListen(); }
+}
+function browserListen(){
+  const btn = $('#talkBtn'); btn.classList.add('listening'); btn.dataset.mode='browser';
+  setStatus('Listening…');
+  Voice.listen(
+    (best)=>{ if(best){ addMsg('you', best); handleCommand(best); } },
+    ()=>{ btn.classList.remove('listening'); btn.dataset.mode=''; setStatus('Tap to talk'); }
+  );
+}
 
-  // home cards
-  $$('.card').forEach(c=> c.onclick = ()=>{
+function wire(){
+  // talk button — Whisper (record→transcribe) when a key is set, else browser voice
+  $('#talkBtn').onclick = () => onTalk();
+
+  // quick-action chips
+  $$('[data-act]').forEach(c=> c.onclick = ()=>{
     const a=c.dataset.act;
     if(a==='medicines'){ renderMeds(); go('medicines'); }
     else if(a==='call'){ renderContacts(); go('call'); }
-    else if(a==='torch'){ Torch.toggle(); }
+    else if(a==='torch'){ Torch.toggle(); addMsg('saarthi','Here is the torch.'); }
     else if(a==='youtube'){ openYouTube(''); }
     else if(a==='help'){ speakAndShow(say('help_intro')); }
     else if(a==='repeat'){ if(lastSpoken) Voice.speak(lastSpoken); }

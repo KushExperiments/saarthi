@@ -6,39 +6,33 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="stylesheet" href="css/style.css">
 
-<!-- ============ HOME SCREEN ============ -->
+<!-- ============ HOME / ASSISTANT SCREEN ============ -->
 <main id="home" class="screen active">
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">🌿</span>
-      <span class="brandname">Saarthi</span>
-    </div>
-    <div class="clock" id="clock">--:--</div>
+  <header class="abar">
+    <div class="brand"><span class="dot-logo"></span><span class="brandname">Saarthi</span></div>
     <button class="iconbtn" id="setupBtn" title="Setup" aria-label="Setup">⚙️</button>
   </header>
 
-  <section class="hero">
-    <div class="avatar"><span>😊</span></div>
-    <div class="hello" id="hello">Hello 👋</div>
-    <div class="subhello">I am here to help you</div>
-  </section>
+  <div class="convo" id="convo">
+    <div class="empty" id="emptyState">
+      <div class="orb"><span class="orb-core"></span></div>
+      <div class="empty-title" id="hello">Hello 👋</div>
+      <div class="empty-sub">Tap the microphone and ask me anything — in any language</div>
+    </div>
+  </div>
 
-  <!-- Big talk button -->
-  <button id="talkBtn" class="talk">
-    <span class="mic">🎤</span>
-    <span class="talklabel" id="talkLabel">Tap and talk to me</span>
-  </button>
-
-  <div class="heard" id="heard"></div>
-
-  <!-- Big simple action cards -->
-  <div class="grid">
-    <button class="card" data-act="medicines"><span class="badge b-med">💊</span><span class="clabel">My Medicines</span></button>
-    <button class="card" data-act="call"><span class="badge b-call">📞</span><span class="clabel">Call Someone</span></button>
-    <button class="card" data-act="torch"><span class="badge b-torch">🔦</span><span class="clabel">Torch</span></button>
-    <button class="card" data-act="youtube"><span class="badge b-yt">▶️</span><span class="clabel">YouTube</span></button>
-    <button class="card" data-act="help"><span class="badge b-help">❓</span><span class="clabel">Help Me</span></button>
-    <button class="card" data-act="repeat"><span class="badge b-rep">🔁</span><span class="clabel">Say Again</span></button>
+  <div class="dock">
+    <div class="quickrow">
+      <button class="chip" data-act="medicines">💊 Medicines</button>
+      <button class="chip" data-act="call">📞 Call</button>
+      <button class="chip" data-act="torch">🔦 Torch</button>
+      <button class="chip" data-act="youtube">▶️ YouTube</button>
+    </div>
+    <button id="talkBtn" class="micbtn" aria-label="Talk to Saarthi">
+      <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="micicon">🎤</span>
+    </button>
+    <div class="statusline" id="talkLabel">Tap to talk</div>
   </div>
 </main>
 
