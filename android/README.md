@@ -85,7 +85,7 @@ now applied to the app's own feature modules.
 - [x] Design System in place — `SaarthiTheme` (color/type/shape) reflects the product's actual established warm-green identity and meets the ≥48dp touch-target / large-type accessibility bar from Engineering Master Plan §13
 - [x] CI/CD pipeline exists and runs on every push/PR touching `android/**`
 - [x] Testing framework wired — JUnit4 + Turbine + MockK + Robolectric available via `core:testing`; one real unit test (`OutcomeTest`, `PlaceholderViewModelTest`) and one real Compose UI test (`PlaceholderScreenTest`) exist and pass
-- [ ] **First CI run reviewed by a human** — this file was authored without local compilation; treat the first Actions run as the actual verification, not this checklist
+- [x] **First CI run reviewed by a human — green.** Verified on GitHub Actions (`android-foundation-ci.yml`, commit `cb7b7f5`): the module graph resolves, Hilt/KSP processes correctly, unit tests pass, and `:app:assembleDebug` produces an APK.
 - [ ] ktlint/detekt promoted from report-only to a blocking CI gate (after the first report is reviewed)
 - [ ] Instrumented Compose UI test running in CI (needs an emulator runner action)
 - [ ] `app`-level `@HiltAndroidTest` proving full DI graph resolution under real Android instrumentation
