@@ -22,7 +22,7 @@ const DB = {
 let state = {
   medicines : DB.load('medicines', []),   // {id,name,times:[],taken:{date,doneTimes:[]}}
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
-  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', groqKey:'' }),
+  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', groqKey:'', wake:false }),
 };
 // Pick up an optional key from a git-ignored config.js (window.SAARTHI_KEY)
 if(!state.settings.groqKey && window.SAARTHI_KEY) state.settings.groqKey = window.SAARTHI_KEY;
@@ -529,6 +529,42 @@ function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); 
 /* ============================================================
    WIRING
    ============================================================ */
+/* ============================================================
+   WAKE WORD — always listening for the name "Saarthi"
+   Lightweight on-device recognition; when it hears the name it
+   handles whatever was said after it. Hands-free.
+   ============================================================ */
+const Wake = {
+  rec:null, on:false, paused:false,
+  words:['saarthi','sarathi','saarti','sarthi','साथी','सारथी','साथि','ساتھی'],
+  start(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR || this.rec) return;
+    const rec = new SR();
+    rec.lang = state.settings.lang; rec.continuous = true; rec.interimResults = false;
+    rec.onresult = e => {
+      for(let i=e.resultIndex; i<e.results.length; i++){
+        if(e.results[i].isFinal) this.heard(e.results[i][0].transcript);
+      }
+    };
+    rec.onerror = ()=>{};
+    rec.onend = ()=>{ if(this.on && !this.paused){ try{ rec.start(); }catch{} } };
+    this.rec = rec; this.on = true;
+    try{ rec.start(); }catch{}
+  },
+  stop(){ this.on=false; if(this.rec){ try{ this.rec.stop(); }catch{} this.rec=null; } },
+  heard(said){
+    const s = ' '+said.toLowerCase().trim()+' ';
+    const hit = this.words.find(w => s.includes(w));
+    if(!hit) return;
+    let cmd = said.toLowerCase().slice(s.indexOf(hit)-1 + hit.length).replace(/^[\s,।!?.-]+/,'').trim();
+    if(cmd){ addMsg('you', said.trim()); handleCommand(cmd); }
+    else { speakAndShow('Yes? I am listening.'); }
+  }
+};
+function pauseWake(){ if(Wake.on){ Wake.paused=true; try{Wake.rec && Wake.rec.stop();}catch{} } }
+function resumeWake(){ if(state.settings.wake){ Wake.paused=false; if(!Wake.rec) Wake.start(); else { try{Wake.rec.start();}catch{} } } }
+
 /* ---------- Listening flow: Whisper (tap to start / tap to stop) or browser ---------- */
 let listenBusy = false;
 async function onTalk(){
@@ -538,6 +574,7 @@ async function onTalk(){
     return;
   }
   if(listenBusy) return;
+  pauseWake();                                    // free the mic
   if(state.settings.groqKey && Rec.supported()){
     try{
       await Rec.start();
@@ -551,18 +588,20 @@ async function finishWhisper(){
   listenBusy = true; setStatus('One moment…'); setThinking(true);
   const blob = await Rec.stop();
   const text = await whisperTranscribe(blob);
-  listenBusy = false; setStatus('Tap to talk');
+  listenBusy = false; setStatus(defaultStatus());
   if(text){ addMsg('you', text); await handleCommand(text); }
-  else { setThinking(false); addMsg('saarthi', "I could not hear that. Let me try another way."); browserListen(); }
+  else { setThinking(false); addMsg('saarthi', "I could not hear that. Let me try another way."); browserListen(); return; }
+  resumeWake();
 }
 function browserListen(){
   const btn = $('#talkBtn'); btn.classList.add('listening'); btn.dataset.mode='browser';
   setStatus('Listening…');
   Voice.listen(
     (best)=>{ if(best){ addMsg('you', best); handleCommand(best); } },
-    ()=>{ btn.classList.remove('listening'); btn.dataset.mode=''; setStatus('Tap to talk'); }
+    ()=>{ btn.classList.remove('listening'); btn.dataset.mode=''; setStatus(defaultStatus()); resumeWake(); }
   );
 }
+function defaultStatus(){ return state.settings.wake ? 'Say “Saarthi”, or tap to talk' : 'Tap to talk'; }
 
 function wire(){
   // talk button — Whisper (record→transcribe) when a key is set, else browser voice
@@ -607,12 +646,24 @@ function wire(){
   $('#testVoice').onclick = ()=> Voice.speak(say('greet'));
   $('#userName').oninput = e=>{ state.settings.name=e.target.value.trim(); persist(); };
   $('#groqKey').oninput = e=>{ state.settings.groqKey=e.target.value.trim(); persist(); };
+
+  // hands-free wake word
+  $('#wakeToggle').onchange = e=>{
+    state.settings.wake = e.target.checked; persist();
+    if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “Saarthi”.'); }
+    else Wake.stop();
+    setStatus(defaultStatus());
+  };
+  // caregiver management (moved out of the elder's home screen)
+  $('#openMeds').onclick = ()=>{ renderMeds(); go('medicines'); };
+  $('#openPeople').onclick = ()=>{ renderContacts(); go('call'); };
 }
 function fillSetup(){
   $('#langSel').value=state.settings.lang;
   $('#rateSel').value=state.settings.rate;
   $('#userName').value=state.settings.name;
   $('#groqKey').value=state.settings.groqKey||'';
+  $('#wakeToggle').checked=!!state.settings.wake;
 }
 
 /* ============================================================
@@ -621,6 +672,7 @@ function fillSetup(){
 function start(){
   wire();
   $('#hello').textContent = state.settings.name ? `Hello, ${state.settings.name} 👋` : 'Hello 👋';
+  setStatus(defaultStatus());
   tickClock(); setInterval(tickClock, 15000);
   checkReminders(); setInterval(checkReminders, 20000);
 
@@ -631,8 +683,12 @@ function start(){
   // register service worker for offline + install
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
-  // greet on first tap (autoplay policy needs a user gesture for audio)
-  const greetOnce = ()=>{ Voice.speak(say('greet')); document.removeEventListener('click', greetOnce); };
+  // greet + start hands-free on first tap (browsers need a user gesture for audio/mic)
+  const greetOnce = ()=>{
+    Voice.speak(say('greet'));
+    if(state.settings.wake) Wake.start();
+    document.removeEventListener('click', greetOnce);
+  };
   document.addEventListener('click', greetOnce, {once:true});
 }
 document.addEventListener('DOMContentLoaded', start);

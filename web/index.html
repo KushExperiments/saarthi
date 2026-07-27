@@ -17,22 +17,16 @@
     <div class="empty" id="emptyState">
       <div class="orb"><span class="orb-core"></span></div>
       <div class="empty-title" id="hello">Hello 👋</div>
-      <div class="empty-sub">Tap the microphone and ask me anything — in any language</div>
+      <div class="empty-sub" id="emptySub">Just say <b>“Saarthi”</b> and ask me anything — in any language</div>
     </div>
   </div>
 
   <div class="dock">
-    <div class="quickrow">
-      <button class="chip" data-act="medicines">💊 Medicines</button>
-      <button class="chip" data-act="call">📞 Call</button>
-      <button class="chip" data-act="torch">🔦 Torch</button>
-      <button class="chip" data-act="youtube">▶️ YouTube</button>
-    </div>
     <button id="talkBtn" class="micbtn" aria-label="Talk to Saarthi">
       <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
       <span class="micicon">🎤</span>
     </button>
-    <div class="statusline" id="talkLabel">Tap to talk</div>
+    <div class="statusline" id="talkLabel">Say “Saarthi”, or tap to talk</div>
   </div>
 </main>
 
@@ -79,9 +73,19 @@
     <input type="text" id="userName" placeholder="e.g. Amma, Dad, Kamala">
   </div>
   <div class="setuprow">
+    <label>🎙️ Hands-free (call it by name)</label>
+    <label class="switchrow"><input type="checkbox" id="wakeToggle"> Listen for the name “Saarthi”</label>
+    <p class="hint" style="margin:0">When on, just say “Saarthi …” and it answers — no tapping needed.</p>
+  </div>
+  <div class="setuprow">
+    <label>👨‍👩‍👧 For family — set up</label>
+    <button class="testbtn" id="openMeds">💊 Medicines</button>
+    <button class="testbtn" id="openPeople">📞 People to call</button>
+  </div>
+  <div class="setuprow">
     <label>🧠 AI brain (free Groq key)</label>
     <input type="password" id="groqKey" placeholder="Paste Groq key (gsk_...) to answer any question">
-    <p class="hint" style="margin:0">With a key it understands any language and answers questions (even maths). Without it, only the buttons/commands work. Free key at console.groq.com.</p>
+    <p class="hint" style="margin:0">With a key it understands any language and answers questions (even maths). Without it, only simple commands work. Free key at console.groq.com.</p>
   </div>
   <p class="hint">Tip: Add this page to your Home Screen so it opens like an app.
      Set up medicines and people here, then hand the phone to your elder — they only need the big buttons and the 🎤.</p>
