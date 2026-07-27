@@ -142,9 +142,20 @@ feature — those are M-002 and beyond, per the Engineering Master Plan's
 - [x] `AuthViewModel` unit tests cover all four states (`Loading` transient,
       `NeedsSetup`, `Locked` with and without an error, `Unlocked`) via a
       `FakeAuthRepository` — no Android framework needed to verify this logic
-- [ ] **First CI run for this change reviewed by a human** — same standing
-      rule as M-001; this checklist is not the verification, a green Actions
-      run is
+- [x] **First CI run reviewed by a human — green as of commit `56b3c16`.**
+      Took two real fixes to get there, both found via actual CI failures,
+      not guesswork — worth recording since they're easy mistakes to repeat:
+      1. `hiltViewModel()` was used in `core:security` without that module
+         declaring the `hilt-navigation-compose` dependency (only
+         `hilt-android` was present) — a plain "unresolved reference."
+      2. `DefaultDispatcherProvider` had no `@Inject constructor()`, so
+         `CommonModule`'s `@Binds` had no way to actually construct it — a
+         Dagger "missing binding" error. **This class of bug is invisible
+         to Kotlin compilation** (`compileDebugKotlin` passes fine) and only
+         surfaces one step later, when Hilt's annotation processing runs
+         (`hiltJavaCompileDebug`) — worth remembering for every future
+         `@Binds`/`@Provides` target: the referenced impl class needs its
+         own `@Inject constructor()`, or the failure won't show up until CI.
 - [ ] Biometric unlock (deferred — see "Known, deliberate deviations")
 - [ ] Instrumented test for `EncryptedPrefsAuthRepository` against a real
       Keystore (deferred — same category as M-001's deferred instrumented tests)
