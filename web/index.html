@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2c7">
-<title>Saathi — Your Helper</title>
+<meta name="theme-color" content="#159a6b">
+<title>Saarthi — Your Helper</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="stylesheet" href="css/style.css">
@@ -9,11 +9,19 @@
 <!-- ============ HOME SCREEN ============ -->
 <main id="home" class="screen active">
   <header class="topbar">
+    <div class="brand">
+      <span class="logo">🌿</span>
+      <span class="brandname">Saarthi</span>
+    </div>
     <div class="clock" id="clock">--:--</div>
     <button class="iconbtn" id="setupBtn" title="Setup" aria-label="Setup">⚙️</button>
   </header>
 
-  <div class="hello" id="hello">Hello 👋</div>
+  <section class="hero">
+    <div class="avatar"><span>😊</span></div>
+    <div class="hello" id="hello">Hello 👋</div>
+    <div class="subhello">I am here to help you</div>
+  </section>
 
   <!-- Big talk button -->
   <button id="talkBtn" class="talk">
@@ -25,12 +33,12 @@
 
   <!-- Big simple action cards -->
   <div class="grid">
-    <button class="card" data-act="medicines"><span class="ico">💊</span><span>My Medicines</span></button>
-    <button class="card" data-act="call"><span class="ico">📞</span><span>Call Someone</span></button>
-    <button class="card" data-act="torch"><span class="ico">🔦</span><span>Torch</span></button>
-    <button class="card" data-act="youtube"><span class="ico">▶️</span><span>YouTube</span></button>
-    <button class="card" data-act="help"><span class="ico">❓</span><span>Help Me</span></button>
-    <button class="card" data-act="repeat"><span class="ico">🔁</span><span>Say Again</span></button>
+    <button class="card" data-act="medicines"><span class="badge b-med">💊</span><span class="clabel">My Medicines</span></button>
+    <button class="card" data-act="call"><span class="badge b-call">📞</span><span class="clabel">Call Someone</span></button>
+    <button class="card" data-act="torch"><span class="badge b-torch">🔦</span><span class="clabel">Torch</span></button>
+    <button class="card" data-act="youtube"><span class="badge b-yt">▶️</span><span class="clabel">YouTube</span></button>
+    <button class="card" data-act="help"><span class="badge b-help">❓</span><span class="clabel">Help Me</span></button>
+    <button class="card" data-act="repeat"><span class="badge b-rep">🔁</span><span class="clabel">Say Again</span></button>
   </div>
 </main>
 
@@ -76,6 +84,11 @@
     <label>Name to greet</label>
     <input type="text" id="userName" placeholder="e.g. Amma, Dad, Kamala">
   </div>
+  <div class="setuprow">
+    <label>🧠 AI brain (free Groq key)</label>
+    <input type="password" id="groqKey" placeholder="Paste Groq key (gsk_...) to answer any question">
+    <p class="hint" style="margin:0">With a key it understands any language and answers questions (even maths). Without it, only the buttons/commands work. Free key at console.groq.com.</p>
+  </div>
   <p class="hint">Tip: Add this page to your Home Screen so it opens like an app.
      Set up medicines and people here, then hand the phone to your elder — they only need the big buttons and the 🎤.</p>
 </section>
@@ -102,4 +115,6 @@
   </form>
 </dialog>
 
+<!-- Optional local key file (git-ignored; created only on your machine) -->
+<script src="config.js" onerror="void 0"></script>
 <script src="js/app.js"></script>

@@ -1,3 +1,6 @@
+# Secrets (never commit)
+web/config.js
+
 # Android / Gradle
 .gradle/
 build/

@@ -22,8 +22,10 @@ const DB = {
 let state = {
   medicines : DB.load('medicines', []),   // {id,name,times:[],taken:{date,doneTimes:[]}}
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
-  settings  : DB.load('settings', { lang:'en-US', rate:0.8, name:'' }),
+  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', groqKey:'' }),
 };
+// Pick up an optional key from a git-ignored config.js (window.SAARTHI_KEY)
+if(!state.settings.groqKey && window.SAARTHI_KEY) state.settings.groqKey = window.SAARTHI_KEY;
 const persist = () => {
   DB.save('medicines', state.medicines);
   DB.save('contacts',  state.contacts);
@@ -51,9 +53,14 @@ const Voice = {
 
   pickVoice(lang){
     const base = lang.split('-')[0];
-    // prefer exact, then same base language, else default
-    return this.voices.find(v=>v.lang===lang)
-        || this.voices.find(v=>v.lang && v.lang.startsWith(base))
+    const vs = this.voices;
+    // prefer natural / neural voices — they sound much less robotic
+    const nice = v => /google|natural|neural|premium|enhanced|siri|aria|jenny/i.test(v.name);
+    return vs.find(v=>v.lang===lang && nice(v))
+        || vs.find(v=>v.lang && v.lang.startsWith(base) && nice(v))
+        || vs.find(v=>v.lang===lang)
+        || vs.find(v=>v.lang && v.lang.startsWith(base))
+        || vs.find(v=>nice(v))
         || null;
   },
 
@@ -63,7 +70,7 @@ const Voice = {
     const u = new SpeechSynthesisUtterance(text);
     u.lang  = opts.lang || state.settings.lang;
     u.rate  = opts.rate ?? state.settings.rate;   // slow by default
-    u.pitch = 1.05;                                // gentle, warm
+    u.pitch = 1.0;                                 // natural, gentle
     u.volume= 1;
     const v = this.pickVoice(u.lang);
     if(v) u.voice = v;
@@ -123,7 +130,74 @@ function findContact(t){
   return best;
 }
 
-function handleCommand(raw){
+/* ---------- AI brain (Groq Llama) — understands anything, answers questions ---------- */
+async function aiUnderstand(raw){
+  const key = state.settings.groqKey;
+  if(!key) return null;
+  const names = state.contacts.map(c=>c.name).join(', ') || '(none saved yet)';
+  const sys =
+    "You are Saarthi, a kind voice helper for an elderly person. The user may speak ANY language. "
+    + "Decide ONE action and a spoken reply. Known people you can contact: " + names + ". "
+    + "Reply ONLY as a JSON object with keys: action, person, query, message, reply. "
+    + "action is one of: call, whatsapp, message, torch_on, torch_off, youtube, time, medicine_taken, answer, none. "
+    + "If the user asks ANY question or wants to chat (maths, facts, general knowledge, jokes, advice), "
+    + "use action \"answer\" and put the full, correct, helpful answer in reply. "
+    + "person = exact name from the known people list, or empty. query = search text for youtube. "
+    + "message = the message text (for whatsapp/message). "
+    + "reply = a short, warm sentence spoken in the SAME language the user used. Keep it simple and clear for an elder.";
+  try{
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile', temperature:0.2,
+        response_format:{ type:'json_object' },
+        messages:[ {role:'system',content:sys}, {role:'user',content:raw} ]
+      })
+    });
+    if(!r.ok) return null;
+    const j = await r.json();
+    return JSON.parse(j.choices[0].message.content);
+  }catch{ return null; }
+}
+
+function findContactByName(name){
+  if(!name) return null;
+  const p = name.toLowerCase();
+  return state.contacts.find(c=>c.name.toLowerCase()===p)
+      || state.contacts.find(c=>p.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(p))
+      || null;
+}
+
+function runIntent(i){
+  const c = findContactByName(i.person);
+  const r = i.reply;
+  switch((i.action||'').toLowerCase()){
+    case 'call': if(c){ speakAndShow(r||`Calling ${c.name}.`); openCall(c); } else { speakAndShow(r||"Who should I call? Please add them."); renderContacts(); go('call'); } break;
+    case 'whatsapp': if(c){ speakAndShow(r||`Opening WhatsApp for ${c.name}.`); openWhatsApp(c); } else { speakAndShow(r||"Please add the person first."); renderContacts(); go('call'); } break;
+    case 'message': if(c){ speakAndShow(r||`Message to ${c.name}.`); openSMS(c); } else { speakAndShow(r||"Please add the person first."); renderContacts(); go('call'); } break;
+    case 'torch_on': Torch.set(true); speakAndShow(r||"Torch on."); break;
+    case 'torch_off': Torch.set(false); speakAndShow(r||"Torch off."); break;
+    case 'youtube': speakAndShow(r||"Opening YouTube."); openYouTube(i.query||''); break;
+    case 'time': { const d=new Date(); speakAndShow(r||`It is ${(d.getHours()%12)||12}:${pad(d.getMinutes())} ${d.getHours()<12?'in the morning':'in the evening'}.`); break; }
+    case 'medicine_taken': { const n=markAnyDueTaken(); speakAndShow(r||(n?"Well done. I marked your medicine as taken.":"No medicine is due right now.")); break; }
+    case 'answer': default: speakAndShow(r||"Okay."); break;
+  }
+}
+
+/* Main entry: try the AI brain first (if a key is set), else keyword matching. */
+async function handleCommand(raw){
+  if(state.settings.groqKey){
+    $('#heard').textContent = '…thinking';
+    const intent = await aiUnderstand(raw);
+    if(intent && intent.action){ runIntent(intent); return; }
+    // AI failed (offline / bad key) — fall back to simple commands
+  }
+  handleCommandLocal(raw);
+}
+
+/* ---------- Offline keyword matching (works with no key) ---------- */
+function handleCommandLocal(raw){
   const t = normalize(raw);
 
   if(hasKW(t, KW.help)){
@@ -161,7 +235,9 @@ function handleCommand(raw){
   }
 
   // fallback
-  speakAndShow("Sorry, I didn't understand. You can say: call, torch, YouTube, or medicine.");
+  speakAndShow(state.settings.groqKey
+    ? "Sorry, I didn't understand. Please try again."
+    : "I can do call, torch, YouTube, and medicine. To answer questions like maths, add the free AI key in Setup ⚙️.");
 }
 
 /* ============================================================
@@ -438,11 +514,13 @@ function wire(){
   $('#rateSel').oninput = e=>{ state.settings.rate=parseFloat(e.target.value); persist(); };
   $('#testVoice').onclick = ()=> Voice.speak(say('greet'));
   $('#userName').oninput = e=>{ state.settings.name=e.target.value.trim(); persist(); };
+  $('#groqKey').oninput = e=>{ state.settings.groqKey=e.target.value.trim(); persist(); };
 }
 function fillSetup(){
   $('#langSel').value=state.settings.lang;
   $('#rateSel').value=state.settings.rate;
   $('#userName').value=state.settings.name;
+  $('#groqKey').value=state.settings.groqKey||'';
 }
 
 /* ============================================================
