@@ -1,0 +1,5 @@
+<resources>
+    <!-- Pure-Compose app: a minimal platform theme with no action bar.
+         All real theming (color/type/shape) lives in SaarthiTheme (Compose). -->
+    <style name="Theme.Saarthi" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

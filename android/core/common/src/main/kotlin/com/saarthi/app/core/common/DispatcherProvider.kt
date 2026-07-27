@@ -1,0 +1,21 @@
+package com.saarthi.app.core.common
+
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+
+/**
+ * Indirection over [Dispatchers] so every module can be unit-tested with a
+ * deterministic dispatcher (see core:testing's MainDispatcherRule) instead
+ * of depending on the real ones directly.
+ */
+interface DispatcherProvider {
+    val main: CoroutineDispatcher
+    val io: CoroutineDispatcher
+    val default: CoroutineDispatcher
+}
+
+class DefaultDispatcherProvider : DispatcherProvider {
+    override val main: CoroutineDispatcher = Dispatchers.Main
+    override val io: CoroutineDispatcher = Dispatchers.IO
+    override val default: CoroutineDispatcher = Dispatchers.Default
+}

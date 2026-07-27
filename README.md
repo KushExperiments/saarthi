@@ -1,5 +1,15 @@
 # 🟢 Saarthi — a voice helper for elders
 
+> Read [PHILOSOPHY.md](PHILOSOPHY.md) before contributing — it's the founding
+> product philosophy every change should be checked against. See
+> [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical architecture,
+> [MEMORY.md](MEMORY.md) for the memory, personalization, and lifelong
+> learning design, [COGNITIVE_OS.md](COGNITIVE_OS.md) for the decision-making
+> architecture, [INTERACTION_OS.md](INTERACTION_OS.md) for the complete
+> human-AI interaction design, and
+> [ENGINEERING_MASTER_PLAN.md](ENGINEERING_MASTER_PLAN.md) for exactly how
+> all of it gets built.
+
 **Saarthi** ("companion / guide") is a simple, kind Android app that talks to older
 people in **their own language**, slowly and clearly, and helps them with everyday
 things by voice or with a few big buttons.
