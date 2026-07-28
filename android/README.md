@@ -277,7 +277,41 @@ any caregiver-facing surface.
       `src/test` source sets, which Gradle does not expose across modules
       (only `main` source sets are consumable dependencies) — fixed with
       local fakes in `feature:voice`'s own test source set instead
-- [ ] **First CI run for this batch reviewed by a human**
+- [x] **First CI run for this batch reviewed by a human** — went red three
+      times before actually going green; three independent, compounding bugs,
+      all fixed:
+      1. `ContactsViewModel`/`MedicinesViewModel`/`VoiceViewModel` exposed
+         their state via `.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ...)`.
+         `WhileSubscribed` never starts collecting the upstream flow without
+         an active subscriber — a plain unit test reading `.value` directly
+         (no `.collect{}`) saw it stuck at the seeded empty list forever.
+         Fixed with `SharingStarted.Eagerly`.
+      2. That fix alone would have introduced a new crash: two test files
+         built their ViewModel as a class-body field, which JUnit4
+         initializes *before* `@Rule`'s `starting()` runs — so `Eagerly`'s
+         immediate `viewModelScope` dispatch would hit a `Dispatchers.Main`
+         that hadn't been installed yet. Fixed by moving construction into
+         `@Before`, matching the pattern `AuthViewModelTest` already used.
+         **Any future ViewModel test must construct its ViewModel in
+         `@Before` or a factory function called from inside `@Test` — never
+         as a class-body field initializer.**
+      3. `TestDispatcherProvider` created its own separate
+         `UnconfinedTestDispatcher`, distinct from the one
+         `MainDispatcherRule` installs as `Dispatchers.Main`. Two
+         independent Unconfined dispatchers are each eager on their own but
+         don't reliably synchronize with each other — fixed by having
+         `TestDispatcherProvider` resolve every dispatcher to
+         `Dispatchers.Main` directly, so there's only ever one instance.
+      4. Unrelated, pre-existing compile error in `VoiceHomeScreen.kt`:
+         `when (val current = effect) { ... }` followed by a reference to
+         `current` *after* the when block — that variable is scoped only to
+         the when expression in Kotlin. Had been silently breaking
+         `feature:voice`'s compile since Voice was first written; a compile
+         failure aborts the whole build, which made it look like Voice's
+         CI failure was just cascading from the Contacts/Medicines test bug
+         above when it was actually independent. **New sweep-check:** grep
+         for `when (val \w+ = ` and confirm the captured variable isn't
+         used after the when block closes.
 - [ ] Wake-word / hands-free listening (this pass is tap-to-talk only,
       matching the "don't add continuous background listening battery
       cost until it's needed" caution from Engineering Master Plan §14)
