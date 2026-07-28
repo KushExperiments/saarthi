@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -27,7 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.saarthi.app.core.designsystem.SaarthiColors
 
 /**
@@ -128,16 +126,18 @@ fun VoiceOrb(
             Canvas(modifier = Modifier.size(coreSize)) {
                 val sphereRadius = size.minDimension / 2f
                 val sphereCenter = Offset(size.width / 2f, size.height / 2f)
-                val highlightCenter = Offset(size.width * 0.34f, size.height * 0.30f)
-                val highlightRadius = size.minDimension * 0.30f
+                val highlightCenter = Offset(size.width * 0.36f, size.height * 0.32f)
+                val highlightRadius = size.minDimension * 0.42f
 
                 // Base sphere.
                 drawCircle(brush = coreBrush, radius = sphereRadius, center = sphereCenter)
 
-                // Glossy specular highlight, offset toward the upper-left light source.
+                // Glossy specular highlight, offset toward the upper-left light
+                // source — large and bright, matching the reference's glass-like
+                // sphere rather than a small pinpoint reflection.
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.85f), Color.Transparent),
+                        colors = listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.25f), Color.Transparent),
                         center = highlightCenter,
                         radius = highlightRadius,
                     ),
@@ -148,7 +148,7 @@ fun VoiceOrb(
                 // Rim-shading vignette so the edge reads as curved glass, not a flat disc.
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color.Transparent, SaarthiColors.VoiceAccentDark.copy(alpha = 0.35f)),
+                        colors = listOf(Color.Transparent, SaarthiColors.VoiceAccentDark.copy(alpha = 0.4f)),
                         center = sphereCenter,
                         radius = sphereRadius,
                     ),
@@ -156,7 +156,6 @@ fun VoiceOrb(
                     center = sphereCenter,
                 )
             }
-            Text(text = if (listening) "⏹" else "🎤", fontSize = 56.sp)
         }
     }
 }
