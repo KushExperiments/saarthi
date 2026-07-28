@@ -22,14 +22,47 @@ android/
 ├── app/                     # Hilt Application, MainActivity, NavHost — the only module allowed to assemble everything
 ├── core/
 │   ├── designsystem/         # SaarthiTheme, Color, Type, Shape — the product's actual warm-green identity, codified
-│   ├── common/                # DispatcherProvider (now Hilt-bound), Outcome<T>
+│   ├── common/                # DispatcherProvider (Hilt-bound), Outcome<T>
 │   ├── navigation/              # SaarthiRoute + FeatureNavigation contracts every feature implements
 │   ├── ui/                        # SaarthiButton, SaarthiCard, NumericKeypad — shared composables on designsystem tokens
-│   ├── security/                    # M-002: PIN hashing, AuthRepository, AuthGate, lock/setup screens
-│   └── testing/                      # MainDispatcherRule, TestDispatcherProvider + test bundle (JUnit4, Turbine, MockK, Robolectric)
+│   ├── security/                    # PIN hashing, AuthRepository, AuthGate, lock/setup screens
+│   ├── data/                          # Room database — MedicineEntity/ContactEntity, DAOs, shared by both features below
+│   └── testing/                        # MainDispatcherRule, TestDispatcherProvider + test bundle (JUnit4, Turbine, MockK, Robolectric)
 └── feature/
-    └── placeholder/                   # ONE screen, proving Hilt DI + Navigation + Design System resolve end-to-end
+    ├── placeholder/                     # Retired as app start; kept as a living template for the FeatureNavigation pattern
+    ├── medicines/                         # THE signature feature — nag-until-confirmed reminders. Now the app's start destination
+    └── contacts/                           # Call/WhatsApp by nickname
 ```
+
+## Medicines — how the nag-until-confirmed loop actually works
+
+Reuses the proven design from the original `app/` prototype rather than
+inventing a riskier "route a notification tap into a specific Compose
+screen" mechanism:
+
+- `ReminderScheduler` sets exact `AlarmManager` alarms per dose time
+  (deterministic — Architecture §2's "Deterministic Business Logic," never
+  an AI runtime decision).
+- `ReminderReceiver` fires when due: shows a full-screen notification
+  (`ReminderNotifier`) *and* re-arms itself to nag again in 2 minutes if
+  still unconfirmed — it does not give up on its own.
+- The notification's full-screen intent launches a dedicated
+  `ReminderActivity` (its own small, Hilt-enabled Activity, wrapped in
+  `SaarthiTheme` — the same pattern the working prototype already proved,
+  not the single-Activity NavHost) — or the "I took it" action button in
+  the notification shade itself confirms directly via
+  `ReminderActionReceiver`, no need to open the app at all.
+- `BootReceiver` re-arms every alarm after a reboot — Reminder State
+  (Architecture §8) survives process death by design, not by accident.
+
+## Contacts — one documented scope cut
+
+Calling uses `ACTION_DIAL` (opens the dialer pre-filled), not
+`ACTION_CALL` (which would dial directly) — no `CALL_PHONE` runtime
+permission needed for this pass. Direct-call is a deliberate, noted
+fast-follow: elder safety-critical calling deserves a proper runtime
+permission flow built carefully, not squeezed into this batch alongside
+everything else.
 
 ## M-002 — how the lock actually works
 
@@ -168,3 +201,37 @@ feature — those are M-002 and beyond, per the Engineering Master Plan's
 Out of scope for M-002, by design: everything M-001 already excluded, plus
 biometric auth, multi-user/caregiver-differentiated auth, and any cloud
 account system — auth here is fully local, single-user, on-device.
+
+## Definition of Done — Medicines & Contacts (first real features)
+
+- [x] `core:data` — Room database shared by both features (one embedded
+      store, per Engineering Master Plan §6, not two parallel ones)
+- [x] Medicines: add/list/delete, reminders scheduled via `AlarmManager`,
+      full-screen nag notification that re-arms itself every 2 minutes
+      until confirmed, confirmable either in-app or directly from the
+      notification shade, alarms survive reboot via `BootReceiver`
+- [x] Contacts: add/list/delete, call via `ACTION_DIAL`, open WhatsApp
+- [x] `MedicinesNavigation` is now the app's sole start destination;
+      `PlaceholderNavigation` no longer claims one (only one feature may,
+      or which one "wins" is non-deterministic — fixed here)
+- [x] Unit tests: `MedicineTest` (domain logic, entity round-trip),
+      `MedicinesViewModelTest`, `ContactsViewModelTest` — all against fakes,
+      no Android framework or real alarms/database needed to verify the logic
+- [x] Pre-push self-review swept the whole repo for the two bug classes
+      that broke M-002's first two CI runs (missing `@Inject constructor()`
+      on any `@Binds`/`@Provides` target; missing `hilt-navigation-compose`
+      anywhere `hiltViewModel()` is used) — zero findings
+- [ ] **First CI run for this batch reviewed by a human** — same standing
+      rule as every prior module
+- [ ] Direct `ACTION_CALL` (see deviations above)
+- [ ] Instrumented test for the Room DAOs against a real device/emulator
+      database (same deferred category as every other Android-framework
+      integration test in this project so far)
+- [ ] Adherence history beyond "confirmed today" — the current schema only
+      tracks today's confirmations per dose, not a full timeline; Memory
+      §6's Life Timeline design covers proper long-term tracking later
+
+Out of scope for this batch, by design: everything M-001/M-002 already
+excluded, plus AI/voice (Cognitive OS, Interaction OS — those attach to
+these same repositories and screens later, not rebuilt from scratch), and
+any caregiver-facing surface.

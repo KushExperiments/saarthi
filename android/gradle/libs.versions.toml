@@ -1,4 +1,5 @@
 [versions]
+room = "2.6.1"
 agp = "8.7.2"
 kotlin = "2.0.21"
 ksp = "2.0.21-1.0.28"
@@ -52,6 +53,10 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
