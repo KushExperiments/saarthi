@@ -30,9 +30,27 @@ android/
 │   └── testing/                        # MainDispatcherRule, TestDispatcherProvider + test bundle (JUnit4, Turbine, MockK, Robolectric)
 └── feature/
     ├── placeholder/                     # Retired as app start; kept as a living template for the FeatureNavigation pattern
-    ├── medicines/                         # THE signature feature — nag-until-confirmed reminders. Now the app's start destination
-    └── contacts/                           # Call/WhatsApp by nickname
+    ├── medicines/                         # Nag-until-confirmed reminders
+    ├── contacts/                           # Call/WhatsApp by nickname
+    └── voice/                               # Wake-free tap-to-talk STT/TTS + command router. Now the app's start destination
 ```
+
+## Voice — the actual point of the whole app
+
+`VoiceEngine` wraps Android's own free STT (`SpeechRecognizer`) and TTS
+(`TextToSpeech`) — no AI provider, no network, no key, matching Engineering
+Master Plan §3's "TTS is already solved" stance and extending the same
+logic to STT for this pass. `CommandRouter` is deterministic keyword
+matching (the guaranteed floor tier, Architecture §11) — "call beta",
+"whatsapp beta", "I took it", "show my medicines". `feature:voice` depends
+on `feature:medicines` and `feature:contacts` (it acts on them), which
+mirrors Architecture's own module graph shape (e.g. Emergency depends on
+Health) — dependencies flow one direction, never a cycle back.
+
+`VoiceHomeScreen` is now the app's start destination — no button grid, one
+big microphone, matching the voice-first redesign this project's web
+prototype already went through. Medicines/Contacts are still reachable, by
+voice or direct navigation, just no longer where the app opens to.
 
 ## Medicines — how the nag-until-confirmed loop actually works
 
@@ -235,3 +253,41 @@ Out of scope for this batch, by design: everything M-001/M-002 already
 excluded, plus AI/voice (Cognitive OS, Interaction OS — those attach to
 these same repositories and screens later, not rebuilt from scratch), and
 any caregiver-facing surface.
+
+## Definition of Done — Voice
+
+- [x] `VoiceEngine` — Android's own STT (`SpeechRecognizer`) + TTS
+      (`TextToSpeech`), slow rate + warm pitch, zero AI provider/network/key
+- [x] `CommandRouter` — deterministic keyword routing (call/whatsapp/took
+      it/show medicines), pure logic, no Android dependency
+- [x] `VoiceHomeScreen` is now the app's start destination (voice-first, no
+      button grid); `MedicinesNavigation` no longer claims one
+- [x] Voice can actually act on the other two features: place a call,
+      open WhatsApp, mark the earliest due medicine taken, navigate to
+      the medicines list
+- [x] Tests: `CommandRouterTest` (7 cases, pure logic) and
+      `VoiceViewModelTest` (routes a recognized command to the right
+      effect, marks a dose taken) — `VoiceEngine` mocked via MockK, no
+      real speech/microphone needed to verify the logic
+- [x] Pre-push sweep caught two real bugs before they reached CI: (1)
+      `app/build.gradle.kts` never got `feature:voice` added as a
+      dependency — the module would have been invisible to the final app
+      despite compiling fine on its own; (2) the first test draft imported
+      `FakeMedicineRepository`/`FakeContactRepository` from other modules'
+      `src/test` source sets, which Gradle does not expose across modules
+      (only `main` source sets are consumable dependencies) — fixed with
+      local fakes in `feature:voice`'s own test source set instead
+- [ ] **First CI run for this batch reviewed by a human**
+- [ ] Wake-word / hands-free listening (this pass is tap-to-talk only,
+      matching the "don't add continuous background listening battery
+      cost until it's needed" caution from Engineering Master Plan §14)
+- [ ] Torch/YouTube/volume voice commands (existed in the original `app/`
+      prototype, not yet ported — Contacts/Medicines were prioritized as
+      the two most safety/identity-critical features first)
+- [ ] Real AI understanding (Groq/Whisper/Llama) — this batch is the
+      deterministic keyword floor only; the AI layer is Cognitive OS/
+      Interaction OS territory, a deliberately separate, larger phase
+
+Out of scope for this batch, by design: everything prior batches already
+excluded, plus AI provider integration, wake word, and the remaining
+device-control voice commands (torch/YouTube/volume) — ported later.
