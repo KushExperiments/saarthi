@@ -13,6 +13,7 @@ private val LightColors = lightColorScheme(
     surface = SaarthiColors.LightSurface,
     onBackground = SaarthiColors.LightInk,
     onSurface = SaarthiColors.LightInk,
+    onSurfaceVariant = SaarthiColors.LightMuted,
     error = SaarthiColors.Danger,
 )
 
@@ -23,6 +24,7 @@ private val DarkColors = darkColorScheme(
     surface = SaarthiColors.DarkSurface,
     onBackground = SaarthiColors.DarkInk,
     onSurface = SaarthiColors.DarkInk,
+    onSurfaceVariant = SaarthiColors.DarkMuted,
     error = SaarthiColors.Danger,
 )
 
