@@ -48,7 +48,8 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
     }
 
     LaunchedEffect(effect) {
-        when (val current = effect) {
+        val current = effect
+        when (current) {
             is VoiceUiEffect.PlaceCall -> ContactActions.dial(context, current.contact)
             is VoiceUiEffect.OpenWhatsApp -> ContactActions.openWhatsApp(context, current.contact)
             VoiceUiEffect.NavigateToMedicines -> navController.navigate(MedicinesRoute.route)
