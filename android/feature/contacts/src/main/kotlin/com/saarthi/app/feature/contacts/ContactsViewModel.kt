@@ -18,7 +18,7 @@ class ContactsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val contacts: StateFlow<List<Contact>> = repository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun addContact(name: String, phone: String) {
         if (name.isBlank() || phone.isBlank()) return

@@ -4,6 +4,7 @@ import com.saarthi.app.core.testing.MainDispatcherRule
 import com.saarthi.app.core.testing.TestDispatcherProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -12,8 +13,17 @@ class ContactsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = FakeContactRepository()
-    private val viewModel = ContactsViewModel(repository, TestDispatcherProvider())
+    private lateinit var repository: FakeContactRepository
+    private lateinit var viewModel: ContactsViewModel
+
+    @Before
+    fun setUp() {
+        // Built after the rule installs the test Main dispatcher (not as a field
+        // initializer, which JUnit4 runs before @Rule.starting()) so this ViewModel's
+        // eager stateIn(..., SharingStarted.Eagerly, ...) dispatches on the right Main.
+        repository = FakeContactRepository()
+        viewModel = ContactsViewModel(repository, TestDispatcherProvider())
+    }
 
     @Test
     fun `addContact ignores a blank name or phone`() {

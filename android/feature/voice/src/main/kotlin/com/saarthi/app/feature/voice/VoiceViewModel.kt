@@ -40,7 +40,7 @@ class VoiceViewModel @Inject constructor(
     val effect: StateFlow<VoiceUiEffect?> = _effect
 
     private val contacts: StateFlow<List<Contact>> = contactRepository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun consumeEffect() {
         _effect.value = null

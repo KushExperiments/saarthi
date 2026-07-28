@@ -19,7 +19,7 @@ class MedicinesViewModel @Inject constructor(
 ) : ViewModel() {
 
     val medicines: StateFlow<List<Medicine>> = repository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun addMedicine(name: String, times: List<String>) {
         if (name.isBlank() || times.isEmpty()) return

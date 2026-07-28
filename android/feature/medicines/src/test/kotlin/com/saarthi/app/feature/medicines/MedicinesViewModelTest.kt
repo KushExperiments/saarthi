@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -14,9 +15,19 @@ class MedicinesViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = FakeMedicineRepository()
-    private val scheduler = mockk<ReminderScheduler>(relaxed = true)
-    private val viewModel = MedicinesViewModel(repository, scheduler, TestDispatcherProvider())
+    private lateinit var repository: FakeMedicineRepository
+    private lateinit var scheduler: ReminderScheduler
+    private lateinit var viewModel: MedicinesViewModel
+
+    @Before
+    fun setUp() {
+        // Built after the rule installs the test Main dispatcher (not as a field
+        // initializer, which JUnit4 runs before @Rule.starting()) so this ViewModel's
+        // eager stateIn(..., SharingStarted.Eagerly, ...) dispatches on the right Main.
+        repository = FakeMedicineRepository()
+        scheduler = mockk(relaxed = true)
+        viewModel = MedicinesViewModel(repository, scheduler, TestDispatcherProvider())
+    }
 
     @Test
     fun `addMedicine ignores a blank name`() {
