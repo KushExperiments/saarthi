@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.saarthi.app.core.designsystem.SaarthiColors
 
@@ -41,6 +42,7 @@ fun VoiceOrb(
     listening: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    orbSize: Dp = 220.dp,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "voiceOrb")
 
@@ -82,15 +84,9 @@ fun VoiceOrb(
         )
     }
 
-    val coreBrush = remember {
-        Brush.radialGradient(
-            colors = listOf(SaarthiColors.VoiceAccentLight, SaarthiColors.VoiceAccent, SaarthiColors.VoiceAccentDark),
-        )
-    }
-
-    Box(modifier = modifier.size(220.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.size(orbSize), contentAlignment = Alignment.Center) {
         if (listening) {
-            Canvas(modifier = Modifier.size(220.dp)) {
+            Canvas(modifier = Modifier.size(orbSize)) {
                 val maxRadius = size.minDimension / 2f
                 repeat(2) { index ->
                     val phase = (rippleProgress + index * 0.5f) % 1f
@@ -105,12 +101,12 @@ fun VoiceOrb(
 
         Box(
             modifier = Modifier
-                .size(190.dp)
+                .size(orbSize * 0.864f)
                 .scale(breathe)
                 .background(brush = glowBrush, shape = CircleShape),
         )
 
-        val coreSize = 148.dp
+        val coreSize = orbSize * 0.673f
         Box(
             modifier = Modifier
                 .size(coreSize)
@@ -129,7 +125,20 @@ fun VoiceOrb(
                 val highlightCenter = Offset(size.width * 0.36f, size.height * 0.32f)
                 val highlightRadius = size.minDimension * 0.42f
 
-                // Base sphere.
+                // Base sphere — a diagonal, five-stop gradient (not a simple
+                // light-center/dark-edge radial) so it reads as a rich,
+                // painted glass sphere rather than a flat shaded ball.
+                val coreBrush = Brush.linearGradient(
+                    colors = listOf(
+                        SaarthiColors.VoiceAccentPale,
+                        SaarthiColors.VoiceAccentLight,
+                        SaarthiColors.VoiceAccent,
+                        SaarthiColors.VoiceAccentDeep,
+                        SaarthiColors.VoiceAccentDark,
+                    ),
+                    start = Offset(size.width * 0.15f, size.height * 0.05f),
+                    end = Offset(size.width * 0.75f, size.height * 0.95f),
+                )
                 drawCircle(brush = coreBrush, radius = sphereRadius, center = sphereCenter)
 
                 // Glossy specular highlight, offset toward the upper-left light
