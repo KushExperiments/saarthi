@@ -13,16 +13,14 @@ object SaarthiColors {
     val BrandGreenLight = Color(0xFF37C98F)
     val BrandGreenDark = Color(0xFF0E7A53)
 
-    // Voice orb accent — the orb's own jewel-tone identity (glossy violet
-    // sphere, matching the AI-assistant reference look), deliberately kept
-    // separate from the green brand used everywhere else in the app. Five
-    // stops so the sphere reads as a rich, painted glass gradient rather
-    // than a flat light-center/dark-edge shaded ball.
-    val VoiceAccentPale = Color(0xFFEDE7FF)
-    val VoiceAccentLight = Color(0xFFB999FF)
-    val VoiceAccent = Color(0xFF8A5CF6)
-    val VoiceAccentDeep = Color(0xFF5B3FBE)
-    val VoiceAccentDark = Color(0xFF2E1F6B)
+    // Voice orb accent — the orb's own soft periwinkle identity, matching
+    // the AI-assistant reference look, deliberately kept separate from the
+    // green brand used everywhere else in the app.
+    val VoiceAccentPale = Color(0xFFF3F1FD)
+    val VoiceAccentLight = Color(0xFFC9C2F4)
+    val VoiceAccent = Color(0xFF9C90E9)
+    val VoiceAccentDeep = Color(0xFF7A6DD9)
+    val VoiceAccentDark = Color(0xFF5C4FBE)
 
     // Light theme
     val LightBackground = Color(0xFFF3F7F4)
