@@ -1,4 +1,4 @@
-# Saarthi — Android Foundation (M-001, M-002)
+# LifeOS — Android Foundation (M-001, M-002)
 
 *M-001: "Create the enterprise project skeleton." M-002: "Authentication &
 App Lock" — resolving the auth gap flagged open across four of the six
@@ -21,10 +21,10 @@ to receive it — see the Engineering Master Plan's roadmap.
 android/
 ├── app/                     # Hilt Application, MainActivity, NavHost — the only module allowed to assemble everything
 ├── core/
-│   ├── designsystem/         # SaarthiTheme, Color, Type, Shape — the product's actual warm-green identity, codified
+│   ├── designsystem/         # LifeOSTheme, Color, Type, Shape — the product's actual warm-green identity, codified
 │   ├── common/                # DispatcherProvider (Hilt-bound), Outcome<T>
-│   ├── navigation/              # SaarthiRoute + FeatureNavigation contracts every feature implements
-│   ├── ui/                        # SaarthiButton, SaarthiCard, NumericKeypad — shared composables on designsystem tokens
+│   ├── navigation/              # LifeOSRoute + FeatureNavigation contracts every feature implements
+│   ├── ui/                        # LifeOSButton, LifeOSCard, NumericKeypad — shared composables on designsystem tokens
 │   ├── security/                    # PIN hashing, AuthRepository, AuthGate, lock/setup screens
 │   ├── data/                          # Room database — MedicineEntity/ContactEntity, DAOs, shared by both features below
 │   └── testing/                        # MainDispatcherRule, TestDispatcherProvider + test bundle (JUnit4, Turbine, MockK, Robolectric)
@@ -66,7 +66,7 @@ screen" mechanism:
   still unconfirmed — it does not give up on its own.
 - The notification's full-screen intent launches a dedicated
   `ReminderActivity` (its own small, Hilt-enabled Activity, wrapped in
-  `SaarthiTheme` — the same pattern the working prototype already proved,
+  `LifeOSTheme` — the same pattern the working prototype already proved,
   not the single-Activity NavHost) — or the "I took it" action button in
   the notification shade itself confirms directly via
   `ReminderActionReceiver`, no need to open the app at all.
@@ -92,7 +92,7 @@ everything else.
   persisted, inside `EncryptedSharedPreferences` (AES-256, Keystore-backed
   master key) — Engineering Master Plan §9's security requirement.
 - **`AuthGate`** is the single seam every later feature sits behind —
-  `MainActivity` wraps `SaarthiNavHost` in it, so nothing behind the lock
+  `MainActivity` wraps `LifeOSNavHost` in it, so nothing behind the lock
   is ever composed until `AuthUiState.Unlocked` is reached. No feature
   module needs to know the gate exists.
 - First run shows `PinSetupScreen` (choose, then confirm); every run after
@@ -164,7 +164,7 @@ now applied to the app's own feature modules.
 - [x] Clean Architecture module boundaries in place (`core:*` / `feature:*` / `app`), no circular dependencies
 - [x] Dependency Injection wired (Hilt) — `PlaceholderViewModel` receives `GreetingProvider` via constructor injection
 - [x] Navigation wired — `MainActivity` renders whatever `Set<FeatureNavigation>` Hilt assembles, with zero knowledge of `feature:placeholder` by name
-- [x] Design System in place — `SaarthiTheme` (color/type/shape) reflects the product's actual established warm-green identity and meets the ≥48dp touch-target / large-type accessibility bar from Engineering Master Plan §13
+- [x] Design System in place — `LifeOSTheme` (color/type/shape) reflects the product's actual established warm-green identity and meets the ≥48dp touch-target / large-type accessibility bar from Engineering Master Plan §13
 - [x] CI/CD pipeline exists and runs on every push/PR touching `android/**`
 - [x] Testing framework wired — JUnit4 + Turbine + MockK + Robolectric available via `core:testing`; one real unit test (`OutcomeTest`, `PlaceholderViewModelTest`) and one real Compose UI test (`PlaceholderScreenTest`) exist and pass
 - [x] **First CI run reviewed by a human — green.** Verified on GitHub Actions (`android-foundation-ci.yml`, commit `cb7b7f5`): the module graph resolves, Hilt/KSP processes correctly, unit tests pass, and `:app:assembleDebug` produces an APK.

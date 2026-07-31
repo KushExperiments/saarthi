@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.core.navigation"
+    namespace = "com.lifeos.app.core.navigation"
     compileSdk = 35
 
     defaultConfig {

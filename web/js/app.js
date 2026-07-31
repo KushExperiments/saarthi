@@ -24,8 +24,8 @@ let state = {
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
   settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', groqKey:'', wake:false }),
 };
-// Pick up an optional key from a git-ignored config.js (window.SAARTHI_KEY)
-if(!state.settings.groqKey && window.SAARTHI_KEY) state.settings.groqKey = window.SAARTHI_KEY;
+// Pick up an optional key from a git-ignored config.js (window.LIFEOS_KEY)
+if(!state.settings.groqKey && window.LIFEOS_KEY) state.settings.groqKey = window.LIFEOS_KEY;
 const persist = () => {
   DB.save('medicines', state.medicines);
   DB.save('contacts',  state.contacts);
@@ -184,7 +184,7 @@ async function aiUnderstand(raw){
   if(!key) return null;
   const names = state.contacts.map(c=>c.name).join(', ') || '(none saved yet)';
   const sys =
-    "You are Saarthi, a kind voice helper for an elderly person. The user may speak ANY language. "
+    "You are LifeOS, a kind voice helper for an elderly person. The user may speak ANY language. "
     + "Decide ONE action and a spoken reply. Known people you can contact: " + names + ". "
     + "Reply ONLY as a JSON object with keys: action, person, query, message, reply. "
     + "action is one of: call, whatsapp, message, torch_on, torch_off, youtube, time, medicine_taken, answer, none. "
@@ -428,12 +428,12 @@ function addMsg(role, text){
 }
 let typingEl = null;
 function setThinking(on){
-  if(on){ if(!typingEl){ typingEl = addMsg('saarthi typing', '•••'); } }
+  if(on){ if(!typingEl){ typingEl = addMsg('lifeos typing', '•••'); } }
   else if(typingEl){ typingEl.remove(); typingEl = null; }
 }
 function setStatus(t){ const s=$('#talkLabel'); if(s) s.textContent = t; }
 
-function speakAndShow(text){ setThinking(false); addMsg('saarthi', text); Voice.speak(text); }
+function speakAndShow(text){ setThinking(false); addMsg('lifeos', text); Voice.speak(text); }
 
 function renderMeds(){
   const box = $('#medList'); box.innerHTML='';
@@ -519,7 +519,7 @@ function openForm(title, fields, onSave){
 function fmt12(hm){ const [h,m]=hm.split(':').map(Number); const ap=h<12?'AM':'PM'; return `${(h%12)||12}:${pad(m)} ${ap}`; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function buzz(){ try{ navigator.vibrate && navigator.vibrate([300,150,300]); }catch{} }
-function toast(msg){ addMsg('saarthi', msg); }
+function toast(msg){ addMsg('lifeos', msg); }
 function notify(title, body){
   if(!('Notification' in window)) return;
   if(Notification.permission==='granted'){ try{ new Notification(title,{body,icon:'icons/icon.svg'});}catch{} }
@@ -530,13 +530,13 @@ function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); 
    WIRING
    ============================================================ */
 /* ============================================================
-   WAKE WORD — always listening for the name "Saarthi"
+   WAKE WORD — always listening for the name "LifeOS"
    Lightweight on-device recognition; when it hears the name it
    handles whatever was said after it. Hands-free.
    ============================================================ */
 const Wake = {
   rec:null, on:false, paused:false,
-  words:['saarthi','sarathi','saarti','sarthi','साथी','सारथी','साथि','ساتھی'],
+  words:['lifeos','sarathi','saarti','sarthi','साथी','सारथी','साथि','ساتھی'],
   start(){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR || this.rec) return;
@@ -590,7 +590,7 @@ async function finishWhisper(){
   const text = await whisperTranscribe(blob);
   listenBusy = false; setStatus(defaultStatus());
   if(text){ addMsg('you', text); await handleCommand(text); }
-  else { setThinking(false); addMsg('saarthi', "I could not hear that. Let me try another way."); browserListen(); return; }
+  else { setThinking(false); addMsg('lifeos', "I could not hear that. Let me try another way."); browserListen(); return; }
   resumeWake();
 }
 function browserListen(){
@@ -601,7 +601,7 @@ function browserListen(){
     ()=>{ btn.classList.remove('listening'); btn.dataset.mode=''; setStatus(defaultStatus()); resumeWake(); }
   );
 }
-function defaultStatus(){ return state.settings.wake ? 'Say “Saarthi”, or tap to talk' : 'Tap to talk'; }
+function defaultStatus(){ return state.settings.wake ? 'Say “LifeOS”, or tap to talk' : 'Tap to talk'; }
 
 function wire(){
   // talk button — Whisper (record→transcribe) when a key is set, else browser voice
@@ -612,7 +612,7 @@ function wire(){
     const a=c.dataset.act;
     if(a==='medicines'){ renderMeds(); go('medicines'); }
     else if(a==='call'){ renderContacts(); go('call'); }
-    else if(a==='torch'){ Torch.toggle(); addMsg('saarthi','Here is the torch.'); }
+    else if(a==='torch'){ Torch.toggle(); addMsg('lifeos','Here is the torch.'); }
     else if(a==='youtube'){ openYouTube(''); }
     else if(a==='help'){ speakAndShow(say('help_intro')); }
     else if(a==='repeat'){ if(lastSpoken) Voice.speak(lastSpoken); }
@@ -650,7 +650,7 @@ function wire(){
   // hands-free wake word
   $('#wakeToggle').onchange = e=>{
     state.settings.wake = e.target.checked; persist();
-    if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “Saarthi”.'); }
+    if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “LifeOS”.'); }
     else Wake.stop();
     setStatus(defaultStatus());
   };

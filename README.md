@@ -1,4 +1,4 @@
-# 🟢 Saarthi — a voice helper for elders
+# 🟢 LifeOS — a voice helper for elders
 
 > Read [PHILOSOPHY.md](PHILOSOPHY.md) before contributing — it's the founding
 > product philosophy every change should be checked against. See
@@ -10,7 +10,7 @@
 > [ENGINEERING_MASTER_PLAN.md](ENGINEERING_MASTER_PLAN.md) for exactly how
 > all of it gets built.
 
-**Saarthi** ("companion / guide") is a simple, kind Android app that talks to older
+**LifeOS** ("companion / guide") is a simple, kind Android app that talks to older
 people in **their own language**, slowly and clearly, and helps them with everyday
 things by voice or with a few big buttons.
 
@@ -28,7 +28,7 @@ is locked.
 |--------|---------|
 | 💊 **Medicine reminders that don't give up** | Reminds at each set time. If not confirmed, it re-reminds every few minutes with a full-screen alert + voice + vibration **until the elder taps "I took it"**. Works after the app is closed and after a reboot. |
 | 🗣️ **Talk in any language** | Uses the phone's own speech engine. Pick the language in Setup (Hindi, Tamil, Bengali, English, Arabic, Spanish… add more easily). Speaks **slowly and gently**. |
-| 📞 **Call / WhatsApp / message by name** | Say *"call Beta"* or *"WhatsApp Vishal"*. Saarthi places the call directly. Add people (with any nickname) in the app. |
+| 📞 **Call / WhatsApp / message by name** | Say *"call Beta"* or *"WhatsApp Vishal"*. LifeOS places the call directly. Add people (with any nickname) in the app. |
 | 🔦 **Torch** | "Torch on / off." |
 | ▶️ **YouTube** | "Play bhajans on YouTube." |
 | 🔊 **Volume & brightness** | "Louder", "full volume"; brightness after a one-time permission. |
@@ -42,7 +42,7 @@ For the real thing, use the Android app.
 
 ## 🧠 Turn on the AI brain (optional, free)
 
-Out of the box Saarthi uses the phone's own free voice engine and understands
+Out of the box LifeOS uses the phone's own free voice engine and understands
 commands by keyword in many languages. To *truly understand any language* and let
 the elder speak freely (even Hinglish or mixed languages), add a **free Groq key**:
 
@@ -68,28 +68,28 @@ phone's voice. Toggles for Llama and Whisper are in Setup.
 
 1. Create a **free GitHub account** and push this project to a repo (see below).
 2. GitHub will automatically build the app. Go to the repo's **Actions** tab →
-   open the latest **"Build Saarthi APK"** run → download **`Saarthi-app`**.
+   open the latest **"Build LifeOS APK"** run → download **`LifeOS-app`**.
 3. Unzip it to get **`app-debug.apk`**. Copy it to the phone and tap to install
    (allow "install from unknown sources" when asked).
 
 ### Push to GitHub
 ```bash
-cd saarthi
+cd lifeos
 git add .
-git commit -m "Saarthi: voice helper for elders"
+git commit -m "LifeOS: voice helper for elders"
 git branch -M main
-git remote add origin https://github.com/<your-username>/saarthi.git
+git remote add origin https://github.com/<your-username>/lifeos.git
 git push -u origin main
 ```
 The APK build starts on its own. You can also trigger it from **Actions →
-Build Saarthi APK → Run workflow**.
+Build LifeOS APK → Run workflow**.
 
 ---
 
 ## 🛠️ Build it yourself (Android Studio)
 
 1. Install **Android Studio** (free).
-2. **File → Open** this `saarthi` folder. Let it sync.
+2. **File → Open** this `lifeos` folder. Let it sync.
    *(If it complains about the Gradle wrapper, run `gradle wrapper` once in the
    folder, or just click Sync — Android Studio will fetch what it needs.)*
 3. Plug in the phone (USB debugging on) and press **Run ▶**, or
@@ -114,7 +114,7 @@ Everything stays **on the phone** — no account, no server, no data sent anywhe
 ### One-time phone setup for reliable reminders
 On some phones (Xiaomi, Oppo, Vivo, Samsung battery saver) you should:
 - Allow the app to **run in background / autostart**
-- Turn **off battery optimization** for Saarthi
+- Turn **off battery optimization** for LifeOS
 - Allow **"Display over other apps"** and **notifications**
 
 This makes sure the medicine alarm can wake the screen on time.
@@ -133,9 +133,9 @@ This makes sure the medicine alarm can wake the screen on time.
 
 ## 📁 Project layout
 ```
-saarthi/
+lifeos/
 ├─ app/                      Android app (Kotlin + Jetpack Compose)
-│  └─ src/main/java/com/saarthi/app/
+│  └─ src/main/java/com/lifeos/app/
 │     ├─ MainActivity.kt      screens + voice command wiring
 │     ├─ Voice.kt             slow friendly speech + listening
 │     ├─ CommandParser.kt     understands commands in many languages
@@ -149,13 +149,13 @@ saarthi/
 
 ## ⚠️ Honest limits
 - Truly understanding **any** spoken language needs a cloud AI. Add a free Groq key
-  (see above) for Llama + Whisper; without it, Saarthi matches command words in many
+  (see above) for Llama + Whisper; without it, LifeOS matches command words in many
   languages using the phone's free voice — pick the elder's language in Setup.
-- The AI needs internet; offline, Saarthi falls back to the phone's own voice.
-- Toggling Wi-Fi silently is blocked by modern Android — Saarthi can open the Wi-Fi
+- The AI needs internet; offline, LifeOS falls back to the phone's own voice.
+- Toggling Wi-Fi silently is blocked by modern Android — LifeOS can open the Wi-Fi
   screen instead.
 - Direct calling requires granting the Phone permission.
-- No app can send a WhatsApp/SMS *silently* — Saarthi prepares the message (AI can
+- No app can send a WhatsApp/SMS *silently* — LifeOS prepares the message (AI can
   write it) and opens it ready to send.
 
 Made with care for the people who cared for us. 💚

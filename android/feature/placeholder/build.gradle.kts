@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.feature.placeholder"
+    namespace = "com.lifeos.app.feature.placeholder"
     compileSdk = 35
 
     defaultConfig {

@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.core.data"
+    namespace = "com.lifeos.app.core.data"
     compileSdk = 35
 
     defaultConfig {

@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.feature.contacts"
+    namespace = "com.lifeos.app.feature.contacts"
     compileSdk = 35
 
     defaultConfig {

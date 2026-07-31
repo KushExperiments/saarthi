@@ -1,4 +1,4 @@
-# Saarthi — Technical Architecture Bible
+# LifeOS — Technical Architecture Bible
 
 *This document assumes [PHILOSOPHY.md](PHILOSOPHY.md) (Vision & Product Philosophy)
 and the Product Requirements Document as final and immutable. It does not
@@ -320,7 +320,7 @@ sequenceDiagram
     participant TTS as Speech Response
     participant MU as Memory Update
 
-    U->>WW: says "Saarthi"
+    U->>WW: says "LifeOS"
     WW->>VAD: wake confirmed
     VAD->>STT: speech segment isolated
     STT->>LD: transcript (raw)

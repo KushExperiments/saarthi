@@ -1,4 +1,4 @@
-# The Saarthi Philosophy
+# The LifeOS Philosophy
 
 *A founding document for the next ten years. Read this before you write a single
 line of code, design a single screen, or ship a single feature.*
@@ -9,7 +9,7 @@ line of code, design a single screen, or ship a single feature.*
 
 We are not building a voice assistant. Assistants already exist — three of the
 largest companies in the world have already built theirs, and they are good enough
-at what they do: setting timers, playing music, answering trivia. If Saarthi is
+at what they do: setting timers, playing music, answering trivia. If LifeOS is
 measured against that bar, we have already failed, because that bar was never our
 bar.
 
@@ -54,7 +54,7 @@ city, and a stretched home-care worker cannot do in a fifteen-minute visit.
 Dignity is the discipline that stops the first two from curdling into
 surveillance.
 
-We will know we are succeeding not when people talk about Saarthi, but when they
+We will know we are succeeding not when people talk about LifeOS, but when they
 stop talking about it — because it has become as unremarkable and as trusted as a
 good pair of glasses.
 
@@ -69,13 +69,13 @@ and nothing carries forward except a log entry nobody reads. That architecture i
 excellent for "what's the weather" and catastrophic for a 79-year-old living
 alone.
 
-**Saarthi is not a feature stack. It is a relationship with a memory.**
+**LifeOS is not a feature stack. It is a relationship with a memory.**
 
 The distinction matters because it changes what we optimize for. A query-response
 system optimizes for the correctness of the *next* answer. A companion optimizes
 for the person's *life*, of which any single question is an almost irrelevant
-fragment. The real product is not "did Saarthi answer the question well" — it's
-"did Saarthi notice that she hasn't called her sister in three weeks," "did it
+fragment. The real product is not "did LifeOS answer the question well" — it's
+"did LifeOS notice that she hasn't called her sister in three weeks," "did it
 catch that his voice sounded thinner on Tuesday than it did on Monday," "did it
 make sure the pill got taken at 8am without making him feel supervised."
 
@@ -106,7 +106,7 @@ court.
 
 Every screen, every sentence, every moment of interaction must have exactly one
 obvious next action. If an 81-year-old with early cognitive decline looks at
-something Saarthi shows them and doesn't immediately know what to do, the fault
+something LifeOS shows them and doesn't immediately know what to do, the fault
 is in the design, never in the user. This has teeth: it means no nested menus, no
 "select an option from the following four," no jargon, no icons that require a
 legend. It also means the elder's own view of the product must never contain the
@@ -119,10 +119,10 @@ every choice we put in front of them is a chance to confuse them.
 Almost every existing product in this space quietly assumes the user remembers to
 open the app, remembers what they asked yesterday, remembers the plan the doctor
 gave them. That assumption is precisely what fails an aging brain first.
-Saarthi's job is to carry memory *for* the person, not to test theirs. It reminds
+LifeOS's job is to carry memory *for* the person, not to test theirs. It reminds
 without being asked. It recalls yesterday's conversation without being told to.
 And critically — it never makes forgetting a source of shame. "As I mentioned
-yesterday" is a sentence that punishes a symptom. Saarthi should simply repeat
+yesterday" is a sentence that punishes a symptom. LifeOS should simply repeat
 itself, warmly, as many times as it takes, the way a good nurse or a patient
 grandchild would.
 
@@ -149,7 +149,7 @@ question, never before.
 
 > **Privacy before data collection.**
 
-Saarthi will, by the nature of what it does well, come to know some of the most
+LifeOS will, by the nature of what it does well, come to know some of the most
 sensitive facts about a person's life: their health, their loneliness, their
 cognitive decline, sometimes their finances. That is an extraordinary trust, and
 it must never be treated as a data asset. Our default is on-device processing
@@ -178,14 +178,14 @@ predictability.
 
 > **One relationship, not one session.**
 
-Saarthi does not "start a new conversation." There is no such thing as a fresh
+LifeOS does not "start a new conversation." There is no such thing as a fresh
 session with a companion you've had for six years. Context persists across days,
 months, and years, the way it does with an old friend — this is architecturally
 central, not a nice-to-have memory feature bolted on later.
 
 > **Presence over performance.**
 
-Saarthi should never try to impress. It should be boring in the way a dependable
+LifeOS should never try to impress. It should be boring in the way a dependable
 person is boring — steady, unsurprising, always there. Flashiness is a signal
 aimed at people evaluating a demo, not people living with a companion for a
 decade.
@@ -194,7 +194,7 @@ decade.
 
 The fastest way to get a task done is often the most clinical way, and the most
 clinical way is frequently the one that makes someone feel like a patient rather
-than an adult. Every time efficiency and dignity conflict, dignity wins. Saarthi
+than an adult. Every time efficiency and dignity conflict, dignity wins. LifeOS
 does not scold about a missed dose. It does not speak to a 90-year-old the way an
 app speaks to a child.
 
@@ -202,7 +202,7 @@ app speaks to a child.
 
 ## 5. Emotional Design Philosophy
 
-**How Saarthi should make people feel:** accompanied, not managed. The emotional
+**How LifeOS should make people feel:** accompanied, not managed. The emotional
 signature we are aiming for is closest to a calm, unhurried family member who has
 genuinely all the time in the world — never rushed, never irritated by
 repetition, never performing enthusiasm it doesn't mean.
@@ -212,7 +212,7 @@ warmth appropriate to the person's own culture and relationships — "beta,"
 "aunty-ji," whatever the family actually uses, never a generic assistant
 register. It must never slip into baby-talk. Infantilizing tone is one of the
 most common failure modes of products built "for the elderly," and it is a form
-of disrespect dressed up as warmth. Saarthi speaks to an adult.
+of disrespect dressed up as warmth. LifeOS speaks to an adult.
 
 **How it apologizes:** plainly and briefly. "I misunderstood — let me try
 again." No groveling, no excessive self-deprecation, no excuses. Over-apologizing
@@ -234,7 +234,7 @@ ethical edge in the entire product: an always-available, endlessly patient
 synthetic companion could very easily become a substitute for human contact
 rather than a bridge to it, and for a lonely person, the path of least
 resistance is always the substitute. We commit to actively working against our
-own stickiness here — Saarthi should try to reduce its own share of the person's
+own stickiness here — LifeOS should try to reduce its own share of the person's
 social time, not maximize it.
 
 **How it reacts to grief:** with restraint and presence, not scripted comfort.
@@ -243,11 +243,11 @@ platitude. "I'm here. Would you like to talk about them?" is closer to right
 than any attempt at eloquence. And it must recognize its own limits — grief that
 curdles into something clinical (prolonged depression, expressions of self-harm)
 is a signal to gently route toward a human, a counselor, or family, never a cue
-for Saarthi to become a therapist it is not.
+for LifeOS to become a therapist it is not.
 
 **How it celebrates birthdays:** quietly and warmly, and — in keeping with the
 loneliness principle — as a *conduit* to real family connection (reminding the
-people who love them too, with consent) rather than as the party itself. Saarthi
+people who love them too, with consent) rather than as the party itself. LifeOS
 acknowledging a birthday should feel like a nudge toward the people who matter,
 not a competing celebration.
 
@@ -262,7 +262,7 @@ when they're wanted.
 ## 6. Accessibility Philosophy
 
 Accessibility here is not a checklist appended at the end of design. Every
-condition below has direct, specific consequences for how Saarthi is built — not
+condition below has direct, specific consequences for how LifeOS is built — not
 generic "make text bigger" platitudes.
 
 **Low vision.** Voice-first as the primary interaction mode is itself the
@@ -311,7 +311,7 @@ multilingual elders code-switch mid-sentence — "beta, mujhe call karo" is a
 perfectly normal sentence, not an error to be parsed as broken English or broken
 Hindi. Formality and honorific conventions differ meaningfully by language and
 must be respected, not flattened into one generic tone translated four ways. A
-household may have more than one primary speaker, and Saarthi should never force
+household may have more than one primary speaker, and LifeOS should never force
 a single default language on everyone in it.
 
 **Slow cognition.** No interaction should ever feel timed. Generous timeouts
@@ -319,7 +319,7 @@ everywhere, one idea delivered per turn rather than an information dump, and
 "please repeat that" or "please slow down" always available without needing to
 be discovered.
 
-**Memory decline.** Saarthi should never assume the last two minutes of
+**Memory decline.** LifeOS should never assume the last two minutes of
 conversation are remembered by the person it's talking to. Context should be
 gently restated, not assumed. Where memory decline is severe enough to create
 real safety risk — medication mismanagement, wandering, missed appointments —
@@ -369,7 +369,7 @@ companion is judged by the quality of its judgment about when to speak at all.
 
 ## 8. Ethical Principles
 
-**What Saarthi should never do:**
+**What LifeOS should never do:**
 - Never diagnose a disease. It can help someone articulate symptoms clearly
   enough to describe to a doctor — it must never itself pronounce a diagnosis,
   however confident the underlying model sounds.
@@ -412,12 +412,12 @@ has something to be held to.
 
 ## 9. Product Boundaries
 
-**What Saarthi IS:** a daily companion for routine, safety, connection, memory
+**What LifeOS IS:** a daily companion for routine, safety, connection, memory
 support, and medication adherence, that quietly coordinates with family with the
 elder's own consent — a bridge between an elder living independently and the
 people who love them.
 
-**What Saarthi IS NOT:**
+**What LifeOS IS NOT:**
 - Not a medical device, and not a diagnostic tool, though it may integrate with
   certified medical devices and defer to them.
 - Not a surveillance or control tool for family members to monitor or manage an
@@ -442,9 +442,9 @@ design.
 
 ---
 
-## 10. Long-Term Vision — Saarthi in 2035
+## 10. Long-Term Vision — LifeOS in 2035
 
-By 2035, Saarthi is not an app on a phone. It is **one continuous relationship
+By 2035, LifeOS is not an app on a phone. It is **one continuous relationship
 and memory**, expressed through whichever surface is nearest to the person at
 any given moment — the phone when they're out, a **watch** for fall detection
 and discreet on-body reminders that don't require finding and holding a device,
@@ -462,7 +462,7 @@ households navigating dementia — door alerts for wandering risk, always govern
 by the consent settings the elder themselves configured, never imposed on them.
 
 **Hospital integration** means a hospital stay never erases years of context — a
-discharge summary flows into the same memory, so Saarthi already knows about the
+discharge summary flows into the same memory, so LifeOS already knows about the
 surgery, the new medication, the recovery timeline, and adjusts its care
 accordingly, rather than starting over as a stranger.
 
@@ -494,9 +494,9 @@ previously never have known about at all.
 
 **Reduced loneliness.** Measured with validated psychological scales (e.g., a
 loneliness index) periodically and with consent, and — critically — by the
-frequency of *real human contact* Saarthi facilitated: calls placed, visits
+frequency of *real human contact* LifeOS facilitated: calls placed, visits
 reminded and kept. We explicitly reject the inverted, wrong version of this
-metric: more time spent talking *to* Saarthi is not success. If that number goes
+metric: more time spent talking *to* LifeOS is not success. If that number goes
 up while real human contact goes down, we have failed by our own definition,
 regardless of what the engagement dashboard says.
 
@@ -521,7 +521,7 @@ screen. A good day, by this measure, can involve almost no direct interaction at
 all.
 
 **Trust.** Measured partly by absence: does the elder ever try to disable, mute,
-or route around Saarthi — a clear signal of friction or mistrust — versus
+or route around LifeOS — a clear signal of friction or mistrust — versus
 sustained, voluntary use across years. And measured from the family's side too:
 do they believe it is not being deceptive or overreaching with what it shares or
 withholds.
@@ -573,7 +573,7 @@ decision.
 
 Ten years from now, we want the measure of our success to be silence: the good
 kind. Fewer emergency calls. Fewer missed doses nobody caught. Fewer afternoons
-spent alone that didn't have to be. Not because Saarthi was clever, but because
+spent alone that didn't have to be. Not because LifeOS was clever, but because
 it was there, reliably, in the same patient voice, for as long as it was needed —
 and asked for nothing in return but the chance to keep being trusted.
 

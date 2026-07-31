@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Saarthi"
+rootProject.name = "LifeOS"
 include(":app")

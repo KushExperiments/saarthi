@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.core.designsystem"
+    namespace = "com.lifeos.app.core.designsystem"
     compileSdk = 35
 
     defaultConfig {
@@ -29,4 +29,6 @@ dependencies {
     implementation(libs.compose.material3)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.compose.ui.tooling.preview)
+
+    testImplementation(libs.junit)
 }

@@ -1,8 +1,8 @@
-# Saarthi — Memory, Personalization & Lifelong Learning
+# LifeOS — Memory, Personalization & Lifelong Learning
 
 *This document assumes [PHILOSOPHY.md](PHILOSOPHY.md), the PRD, and
 [ARCHITECTURE.md](ARCHITECTURE.md) as final and immutable. It does not restate
-or modify any of them. Its only job: how does Saarthi remember a person for
+or modify any of them. Its only job: how does LifeOS remember a person for
 fifty years without ever confusing, surprising, or misrepresenting them?*
 
 This is not a database design. It is not RAG. It is not chatbot conversation
@@ -42,11 +42,11 @@ prospective. Human memory research gives us a far better blueprint, because
 it already solved "how does a finite system remember a whole life without
 drowning in it."
 
-| Human memory type | What it is | Maps to in Saarthi |
+| Human memory type | What it is | Maps to in LifeOS |
 |---|---|---|
 | **Working memory** | A few seconds of active, limited-capacity holding | The **Turn Context** (Architecture §5/§6) — exists only for the current conversational turn, never persisted |
 | **Short-term memory** | Seconds to minutes, decays unless consolidated | **Conversation Memory** — the current session; decays at session end unless the Memory Agent extracts durable facts |
-| **Procedural memory** | "How to do things" — habits performed without conscious thought | **Habit/Routine memory** (§7) — detected behavioral patterns, never physically "done" by Saarthi, but recognized and supported |
+| **Procedural memory** | "How to do things" — habits performed without conscious thought | **Habit/Routine memory** (§7) — detected behavioral patterns, never physically "done" by LifeOS, but recognized and supported |
 | **Semantic memory** | Timeless facts, independent of when/where learned | The **Knowledge Graph** (§5) and Identity/Relationship facts |
 | **Episodic memory** | Specific events tied to a time and place | The **Life Timeline** (§6) |
 | **Autobiographical memory** | Emotionally-weighted episodic memory forming life narrative and identity | Life Timeline entries tagged **significant** — weddings, births, losses — held to a higher retention bar than routine episodic entries |
@@ -426,7 +426,7 @@ consequence of Architecture's Stateless AI principle applied to this domain.
 
 **Boundaries — preventing unsafe personalization:**
 - Safety-critical behaviors are **not** subject to habit-learning override.
-  If someone repeatedly asks Saarthi to skip logging a missed dose, the
+  If someone repeatedly asks LifeOS to skip logging a missed dose, the
   system does not "learn" to stop flagging missed doses — that logic lives
   in the deterministic Planning/Safety layers, entirely outside the
   learnable-preference space.

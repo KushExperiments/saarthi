@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.feature.voice"
+    namespace = "com.lifeos.app.feature.voice"
     compileSdk = 35
 
     defaultConfig {
@@ -29,6 +29,9 @@ dependencies {
     implementation(project(":core:navigation"))
     implementation(project(":core:ui"))
     implementation(project(":core:common"))
+    implementation(project(":core:ai"))
+    implementation(project(":core:cognitive"))
+    implementation(project(":core:interaction"))
     // Voice sits above Medicines/Contacts and acts on them — matches
     // Architecture's own graph shape (e.g. Emergency depends on Health),
     // dependencies flow one direction, no cycle back.
@@ -36,6 +39,7 @@ dependencies {
     implementation(project(":feature:contacts"))
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.ktx)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -45,6 +49,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.activity.compose)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.compose.ui.tooling.preview)
 

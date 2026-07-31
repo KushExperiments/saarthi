@@ -15,11 +15,11 @@ val localProps = Properties().apply {
 }
 
 android {
-    namespace = "com.saarthi.app"
+    namespace = "com.lifeos.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.saarthi.app"
+        applicationId = "com.lifeos.app"
         minSdk = 26          // Android 8.0 — covers almost all elders' phones
         targetSdk = 35
         versionCode = 1

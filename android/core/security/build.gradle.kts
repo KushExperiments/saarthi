@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.core.security"
+    namespace = "com.lifeos.app.core.security"
     compileSdk = 35
 
     defaultConfig {

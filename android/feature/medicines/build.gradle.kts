@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.feature.medicines"
+    namespace = "com.lifeos.app.feature.medicines"
     compileSdk = 35
 
     defaultConfig {
@@ -30,6 +30,8 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:common"))
     implementation(project(":core:data"))
+    implementation(project(":core:cognitive"))
+    implementation(project(":core:interaction"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

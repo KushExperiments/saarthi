@@ -1,4 +1,4 @@
-name: Build Saarthi APK
+name: Build LifeOS APK
 
 on:
   push:
@@ -29,5 +29,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Saarthi-app
+          name: LifeOS-app
           path: app/build/outputs/apk/debug/app-debug.apk

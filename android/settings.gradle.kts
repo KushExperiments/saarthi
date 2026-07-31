@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "saarthi-android"
+rootProject.name = "lifeos-android"
 
 include(":app")
 include(":core:designsystem")
@@ -23,6 +23,10 @@ include(":core:ui")
 include(":core:testing")
 include(":core:security")
 include(":core:data")
+include(":core:ai")
+include(":core:memory")
+include(":core:cognitive")
+include(":core:interaction")
 include(":feature:placeholder")
 include(":feature:medicines")
 include(":feature:contacts")

@@ -1,10 +1,10 @@
-# Saarthi — Engineering Master Plan
+# LifeOS — Engineering Master Plan
 
 *This document assumes [PHILOSOPHY.md](PHILOSOPHY.md), the PRD,
 [ARCHITECTURE.md](ARCHITECTURE.md), [MEMORY.md](MEMORY.md),
 [COGNITIVE_OS.md](COGNITIVE_OS.md), and [INTERACTION_OS.md](INTERACTION_OS.md)
 as final and immutable. It converts all six into a production-grade
-engineering plan: exactly how Saarthi gets built, over years, without
+engineering plan: exactly how LifeOS gets built, over years, without
 rewriting or contradicting anything already decided.*
 
 No application code appears below. Scores in this document are deliberately
@@ -61,7 +61,7 @@ now is cheaper than discovering them in production.
 ## 2. Complete Repository Structure
 
 ```
-saarthi/
+lifeos/
 ├── android/            # current app/, renamed — primary client
 ├── ios/                # not started; shares shared/ once begun
 ├── wearables/           # thin-client watch companion (Architecture §13)
@@ -265,9 +265,9 @@ A genuine threat model — vector, mitigation, and severity for each.
 | Supply chain attacks | Compromised dependency | Dependency pinning, SBOM generation, automated vulnerability scanning in CI | High |
 | Reverse engineering | Unobfuscated release build | Enable R8 minification/obfuscation for release builds (currently `minifyEnabled=false` — a concrete, actionable fix) | Medium |
 | Tampering / rooted devices | Modified APK, rooted OS | Play Integrity API check — **warn, don't block**, since a legitimate but rooted elder's phone must not lose medicine reminders over a false-positive tamper flag | Medium |
-| **Accessibility-service abuse** | A *different* malicious app using broad Accessibility permissions to read/control Saarthi | Saarthi's own Accessibility Service usage (if any) scoped minimally and disclosed; detect and warn if other apps hold broad accessibility permissions — a real, named elder-fraud vector | High |
+| **Accessibility-service abuse** | A *different* malicious app using broad Accessibility permissions to read/control LifeOS | LifeOS's own Accessibility Service usage (if any) scoped minimally and disclosed; detect and warn if other apps hold broad accessibility permissions — a real, named elder-fraud vector | High |
 | Prompt injection | Crafted user/provider input trying to bypass safety rules | Structural, not prompt-level: the Safety Agent is a separate deterministic validator outside the LLM's own context — it cannot be talked out of its job | Critical |
-| Social engineering (elder-specific) | A scammer coaching the elder to have Saarthi read a bank OTP aloud | Saarthi never reads sensitive codes/OTP/financial information aloud regardless of who asks — an explicit, named policy | Critical |
+| Social engineering (elder-specific) | A scammer coaching the elder to have LifeOS read a bank OTP aloud | LifeOS never reads sensitive codes/OTP/financial information aloud regardless of who asks — an explicit, named policy | Critical |
 | **Data poisoning via correction** | A bad-faith caregiver "corrects" a medicine dosage | Memory's blanket "correction always wins" principle needs a carve-out: **high-risk categories (medicine dosage) require correction to originate from the elder's own voice or an authenticated doctor channel**, not just anyone talking to the device — a genuine refinement added here | Critical |
 
 ---
@@ -501,7 +501,7 @@ today's engineering choices support them**:
   reasoning capability over time without a redesign — a smarter LLM
   slots into the same candidate-generator role it already holds.
 - Interaction OS's surface-agnostic interaction rules (§19) mean the *way*
-  Saarthi behaves doesn't need reinventing per new device class — only
+  LifeOS behaves doesn't need reinventing per new device class — only
   the modality changes.
 - None of this is free: it depends on the sync/backend layer (§6) and the
   authentication layer (§9) actually getting built, not staying deferred.

@@ -1,9 +1,9 @@
-# Saarthi — Cognitive Operating System
+# LifeOS — Cognitive Operating System
 
 *This document assumes [PHILOSOPHY.md](PHILOSOPHY.md), the PRD,
 [ARCHITECTURE.md](ARCHITECTURE.md), and [MEMORY.md](MEMORY.md) as final and
 immutable. It does not restate or modify any of them. Its job: define HOW
-Saarthi thinks before it speaks or acts — not an LLM prompt, not
+LifeOS thinks before it speaks or acts — not an LLM prompt, not
 chain-of-thought, not chatbot reasoning.*
 
 No production code appears below. The LLM is one reasoning component among
@@ -57,41 +57,41 @@ Human cognition is not one thing to copy or reject wholesale — it is a
 collection of strategies, some worth stealing and some worth deliberately
 avoiding.
 
-**What Saarthi should emulate:**
+**What LifeOS should emulate:**
 - **Bounded rationality / satisficing** — humans rarely find the globally
   optimal action; they find a *good enough* one fast, because waiting for
-  certainty is itself costly. Saarthi's Decision Engine (§7) is built the
+  certainty is itself costly. LifeOS's Decision Engine (§7) is built the
   same way: rank candidates, act on the best available, don't search
   forever for a theoretical optimum.
 - **Hierarchical goal management** — humans hold multiple goals at once
   (stay safe, feel good, be social) and unconsciously prioritize among them.
-  Saarthi's Goal Management (§5) makes this hierarchy explicit and
+  LifeOS's Goal Management (§5) makes this hierarchy explicit and
   hardcoded, rather than leaving it to be inferred per-turn.
 - **Graceful degradation under damage** — a human who can't recall a name
   still functions; cognition fails a little at a time, not all at once.
-  Saarthi's layered fallback ladders (§15) are a deliberate structural copy
+  LifeOS's layered fallback ladders (§15) are a deliberate structural copy
   of this property.
 - **Calibrated uncertainty** — a well-functioning human knows the
-  difference between "I'm sure" and "I think so." Saarthi's Uncertainty
+  difference between "I'm sure" and "I think so." LifeOS's Uncertainty
   Engine (§10) exists because this is worth having explicitly, not left
   implicit in a model's tone.
 
-**What Saarthi must NOT emulate:**
+**What LifeOS must NOT emulate:**
 - **Cognitive biases** (confirmation bias, anchoring, motivated reasoning) —
   these are systematic errors, not features. A system that anchors on its
   first hypothesis about a person's health and then discounts contradicting
   evidence would be actively dangerous here.
 - **Fatigue-driven shortcuts** — humans get worse at reasoning when tired.
-  Saarthi has no reason to degrade this way and must not simulate it.
+  LifeOS has no reason to degrade this way and must not simulate it.
 - **Inconsistency** — a human's mood-of-the-day changes their patience and
-  judgment. Saarthi's behavior should be stable and predictable turn to
+  judgment. LifeOS's behavior should be stable and predictable turn to
   turn, per Philosophy's "trust over intelligence" and "presence over
   performance" principles.
 - **Ego-protective rationalization** — humans resist admitting error to
-  protect self-image. Saarthi has no self-image to protect and should
+  protect self-image. LifeOS has no self-image to protect and should
   admit uncertainty or mistakes immediately and plainly (§10, Philosophy §8).
 
-The design stance, stated plainly: **Saarthi should be more consistent and
+The design stance, stated plainly: **LifeOS should be more consistent and
 better calibrated than human cognition, while borrowing its good
 architectural ideas** — hierarchy, satisficing, graceful degradation — and
 rejecting its failure modes outright.

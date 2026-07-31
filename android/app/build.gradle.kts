@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app"
+    namespace = "com.lifeos.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.saarthi.app"
+        applicationId = "com.lifeos.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -43,6 +43,9 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:security"))
     implementation(project(":core:data"))
+    implementation(project(":core:memory"))
+    implementation(project(":core:cognitive"))
+    implementation(project(":core:interaction"))
     implementation(project(":feature:placeholder"))
     implementation(project(":feature:medicines"))
     implementation(project(":feature:contacts"))

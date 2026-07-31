@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.saarthi.app.core.testing"
+    namespace = "com.lifeos.app.core.testing"
     compileSdk = 35
 
     defaultConfig {
