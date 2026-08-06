@@ -16,9 +16,9 @@
 }
 @media (prefers-color-scheme:dark){
   :root{
-    --bg1:#0d1613; --bg2:#0b1310; --card:#16211d; --ink:#eaf3ee; --muted:#9db0a7;
-    --line:#243530; --ring:rgba(55,201,143,.30);
-    --shadow:0 10px 30px rgba(0,0,0,.45); --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+    --bg1:#0a0c0b; --bg2:#050605; --card:#15191b; --ink:#f3f6f4; --muted:#9aa39e;
+    --line:#262c29; --ring:rgba(55,201,143,.4);
+    --shadow:0 12px 36px rgba(0,0,0,.55); --shadow-sm:0 4px 16px rgba(0,0,0,.4);
   }
 }
 /* Explicit theme override — Setup lets the elder (or family) pick "Dark" or
@@ -26,11 +26,14 @@
    An attribute selector is more specific than the bare `:root` inside the
    media query above, so this wins regardless of source order — meaning
    "Light" genuinely overrides a dark system theme, and vice versa. Left
-   unset, the phone's own setting (the media query) still decides. */
+   unset, the phone's own setting (the media query) still decides.
+   Dark is the default identity now (matches Gemini's own near-black UI,
+   with color living in the gradient accents rather than a tinted
+   background) — a near-neutral graphite, not the old dark-green tint. */
 :root[data-theme="dark"]{
-  --bg1:#0d1613; --bg2:#0b1310; --card:#16211d; --ink:#eaf3ee; --muted:#9db0a7;
-  --line:#243530; --ring:rgba(55,201,143,.30);
-  --shadow:0 10px 30px rgba(0,0,0,.45); --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+  --bg1:#0a0c0b; --bg2:#050605; --card:#15191b; --ink:#f3f6f4; --muted:#9aa39e;
+  --line:#262c29; --ring:rgba(55,201,143,.4);
+  --shadow:0 12px 36px rgba(0,0,0,.55); --shadow-sm:0 4px 16px rgba(0,0,0,.4);
 }
 :root[data-theme="light"]{
   --bg1:#eaf6ef; --bg2:#f7f5ee; --card:#ffffff; --ink:#12241c; --muted:#5f7168;
@@ -73,7 +76,11 @@ a:focus-visible,select:focus-visible,[tabindex]:focus-visible{
   mask-image:var(--i); -webkit-mask-image:var(--i)
 }
 body{
-  font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;
+  /* Roboto first, not last — it's Google's actual UI typeface and, more
+     practically, it's what's already installed on the elder's Android
+     phone (the real target device), so this is both "look like Google"
+     and zero extra network weight — no webfont fetch, offline-safe. */
+  font-family:Roboto,"Google Sans","Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
   color:var(--ink); font-size:20px; line-height:1.45;
   background:
     radial-gradient(1200px 500px at 100% -10%, rgba(55,201,143,.18), transparent 60%),
@@ -224,13 +231,13 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
    instead of a spinning ring. Mirrors design.google's "sharp leading edge
    diffusing at the tail" gradient language while staying slow/calm so it
    reads as quietly alive rather than busy. */
-.bloom{width:140px; height:140px; margin:0 auto 20px; position:relative; display:grid; place-items:center}
+.bloom{width:172px; height:172px; margin:0 auto 22px; position:relative; display:grid; place-items:center}
 .bloom-halo{position:absolute; inset:0; border-radius:50%;
   background:conic-gradient(from 180deg,var(--brand-l),#4a90d9,var(--brand-d),#8a7bff,var(--brand-l));
-  filter:blur(20px); opacity:.55; animation:bloomDrift 10s ease-in-out infinite}
-.bloom-core{width:92px; height:92px; border-radius:50%;
+  filter:blur(26px); opacity:.7; animation:bloomDrift 10s ease-in-out infinite}
+.bloom-core{width:112px; height:112px; border-radius:50%;
   background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.85), transparent 55%), linear-gradient(160deg,var(--brand-l),var(--brand-d));
-  box-shadow:0 18px 46px var(--ring); animation:bloomPulse 8s ease-in-out infinite}
+  box-shadow:0 22px 54px var(--ring); animation:bloomPulse 8s ease-in-out infinite}
 /* Sparkle — the small "this is AI" mark, a four-point star like Gemini's
    own icon. One quiet accent on the welcome bloom, not scattered across
    every button — functional icons use the plainer line-icon set instead
@@ -257,23 +264,28 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
 @keyframes blink{50%{opacity:.4}}
 
 /* bottom dock */
-.dock{padding:10px 16px calc(16px + env(safe-area-inset-bottom));
+.dock{padding:10px 16px calc(20px + env(safe-area-inset-bottom));
   background:linear-gradient(180deg, transparent, var(--bg2) 42%);
-  display:flex; flex-direction:column; align-items:center; gap:12px}
-.micbtn{position:relative; width:88px; height:88px; border-radius:50%; border:none; cursor:pointer;
-  background:var(--gradient-brand); color:#fff;
-  box-shadow:0 12px 30px var(--ring); display:grid; place-items:center;
+  display:flex; align-items:center; justify-content:center}
+/* The composer-bar mic — a wide pill (icon well + status text), not a
+   small floating circle, closer to how Gemini's own input bar reads:
+   one wide rounded surface anchoring the bottom of the screen rather
+   than a small button sitting on its own. */
+.micbtn{position:relative; width:auto; min-width:250px; max-width:100%; border:none; cursor:pointer;
+  border-radius:999px; background:var(--gradient-brand); color:#fff;
+  box-shadow:0 12px 30px var(--ring); display:flex; align-items:center; gap:14px;
+  padding:8px 26px 8px 8px; text-align:left;
   transition:transform .15s var(--ease-settle);
   /* A slow, calm "breathing" glow at rest — the same idle-presence motion
      language the Android app's VoiceOrb uses (2.4s breathe cycle), so the
-     mic reads as quietly alive rather than a static button waiting to be
-     pressed. Pauses automatically once .listening's own pulse takes over. */
+     bar reads as quietly alive rather than a static control waiting to be
+     pressed. Pauses automatically once .listening's own state takes over. */
   animation:micBreathe 2.4s ease-in-out infinite;
 }
-@keyframes micBreathe{0%,100%{box-shadow:0 12px 30px var(--ring)}50%{box-shadow:0 14px 38px 4px var(--ring)}}
-.micbtn:active{transform:scale(.94)}
+@keyframes micBreathe{0%,100%{box-shadow:0 12px 30px var(--ring)}50%{box-shadow:0 14px 40px 4px var(--ring)}}
+.micbtn:active{transform:scale(.97)}
 /* "Thinking" — while waiting on the AI, a slow travelling gradient stands in
-   for the breathing glow so the button visibly shows inner activity instead
+   for the breathing glow so the bar visibly shows inner activity instead
    of going still and looking stuck. Kept slow (3.2s) and low-contrast on
    purpose — this is a calm status cue for an elder-facing app, not a loading
    spinner. */
@@ -287,12 +299,18 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
   50%{background-position:100% 50%; box-shadow:0 14px 36px 3px var(--ring)}
   100%{background-position:0% 50%; box-shadow:0 12px 30px var(--ring)}
 }
-.micicon{font-size:38px}
-.waves{position:absolute; inset:0; display:none; align-items:center; justify-content:center; gap:5px}
-.waves i{width:6px; height:16px; border-radius:3px; background:#fff; animation:eq 1s ease-in-out infinite}
+/* The icon well — a circular avatar inside the pill, the same role the
+   whole button used to play on its own. Ripples/waves are scoped to this
+   circle, not the full pill, so an expanding-ring animation still reads
+   as a circle instead of stretching into the pill's shape. */
+.mic-avatar{position:relative; width:56px; height:56px; border-radius:50%; flex:none;
+  background:rgba(255,255,255,.18); display:grid; place-items:center}
+.micicon{font-size:26px}
+.waves{position:absolute; inset:0; display:none; align-items:center; justify-content:center; gap:4px}
+.waves i{width:5px; height:14px; border-radius:3px; background:#fff; animation:eq 1s ease-in-out infinite}
 .waves i:nth-child(2){animation-delay:.15s} .waves i:nth-child(3){animation-delay:.3s}
 .waves i:nth-child(4){animation-delay:.45s} .waves i:nth-child(5){animation-delay:.6s}
-@keyframes eq{0%,100%{height:12px}50%{height:34px}}
+@keyframes eq{0%,100%{height:10px}50%{height:28px}}
 .micbtn.listening{animation:none}
 .micbtn.listening .micicon{display:none}
 .micbtn.listening .waves{display:flex}
@@ -305,16 +323,16 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
    just looping decoration ("intentional motion"). */
 .ripples{position:absolute; inset:0; border-radius:50%; display:none; pointer-events:none}
 .micbtn.listening .ripples{display:block}
-.ripples i{position:absolute; inset:0; border-radius:50%; border:2px solid var(--brand-l);
-  box-shadow:0 0 14px 2px var(--brand-l);
+.ripples i{position:absolute; inset:0; border-radius:50%; border:2px solid #fff;
+  box-shadow:0 0 14px 2px rgba(255,255,255,.8);
   opacity:0; animation:ripple 1.8s ease-out infinite}
 .ripples i:nth-child(2){animation-delay:.5s}
 .ripples i:nth-child(3){animation-delay:1s}
 @keyframes ripple{
-  0%{transform:scale(1); opacity:.6; box-shadow:0 0 6px 1px var(--brand-l)}
+  0%{transform:scale(1); opacity:.6; box-shadow:0 0 6px 1px rgba(255,255,255,.8)}
   100%{transform:scale(1.9); opacity:0; box-shadow:0 0 22px 6px transparent}
 }
-.statusline{color:var(--muted); font-size:16px; font-weight:600}
+.statusline{color:#fff; font-size:17px; font-weight:700; flex:1; min-width:0}
 
 /* ============================================================
    RESPONSIVE — tablet and laptop/desktop

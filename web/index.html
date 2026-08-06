@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#159a6b">
+<meta name="theme-color" content="#0a0c0b">
 <title>LifeOS — Your Helper</title>
 <link rel="manifest" href="manifest.json">
 <!-- iOS "Add to Home Screen" — without these it opens inside Safari's
@@ -14,13 +14,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LifeOS">
 <link rel="stylesheet" href="css/style.css">
-<!-- Applies a saved dark/light override before first paint, so switching
-     the setting doesn't show a flash of the old theme on next load. Reads
-     localStorage directly (not app.js — that loads later, after paint). -->
+<!-- Applies the saved (or default) dark/light theme before first paint, so
+     there's no flash of the wrong theme on load. Reads localStorage
+     directly (not app.js — that loads later, after paint). Dark is the
+     default identity — matches the Gemini-style near-black look — unless
+     the elder/family explicitly picked Light in Setup. -->
 <script>try{
-  var t = (JSON.parse(localStorage.getItem('saathi_settings'))||{}).theme;
+  var saved = JSON.parse(localStorage.getItem('saathi_settings'));
+  var t = saved ? saved.theme : 'dark';
   if(t==='dark'||t==='light') document.documentElement.dataset.theme = t;
-}catch(e){}</script>
+}catch(e){ document.documentElement.dataset.theme = 'dark'; }</script>
 
 <!-- ============ HOME / ASSISTANT SCREEN ============ -->
 <main id="home" class="screen active">
@@ -40,11 +43,13 @@
 
   <div class="dock">
     <button id="talkBtn" class="micbtn" aria-label="Talk to LifeOS">
-      <span class="ripples"><i></i><i></i><i></i></span>
-      <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
-      <span class="micicon icon icon-mic"></span>
+      <span class="mic-avatar">
+        <span class="ripples"><i></i><i></i><i></i></span>
+        <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="micicon icon icon-mic"></span>
+      </span>
+      <span class="statusline" id="talkLabel">Say “LifeOS”, or tap to talk</span>
     </button>
-    <div class="statusline" id="talkLabel">Say “LifeOS”, or tap to talk</div>
   </div>
 </main>
 
@@ -84,9 +89,9 @@
   <div class="setuprow">
     <label>Screen colors</label>
     <select id="themeSel">
-      <option value="system">Match my phone</option>
-      <option value="light">Light — white background, dark text</option>
       <option value="dark">Dark — black background, white text</option>
+      <option value="light">Light — white background, dark text</option>
+      <option value="system">Match my phone</option>
     </select>
   </div>
   <div class="setuprow">

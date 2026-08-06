@@ -22,7 +22,7 @@ const DB = {
 let state = {
   medicines : DB.load('medicines', []),   // {id,name,times:[],taken:{date,doneTimes:[]}}
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
-  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', aiKey:'', wake:false, theme:'system' }),
+  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', aiKey:'', wake:false, theme:'dark' }),
 };
 // Pick up an optional key from a git-ignored config.js (window.LIFEOS_KEY)
 if(!state.settings.aiKey && window.LIFEOS_KEY) state.settings.aiKey = window.LIFEOS_KEY;
