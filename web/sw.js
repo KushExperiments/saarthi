@@ -1,5 +1,5 @@
 // Minimal offline shell cache — deliberately narrow. Only ever serves the
-// app's own static files from cache; every other request (Groq API calls,
+// app's own static files from cache; every other request (Gemini API calls,
 // tel:/sms:/wa.me links, YouTube) always goes straight to the network.
 const CACHE_NAME = 'lifeos-shell-v1';
 const SHELL_FILES = [
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   // Only handle same-origin GET requests for the app shell — never touch
-  // cross-origin calls (Groq's API, WhatsApp/YouTube links, etc.).
+  // cross-origin calls (Gemini's API, WhatsApp/YouTube links, etc.).
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   event.respondWith(

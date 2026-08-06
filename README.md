@@ -40,14 +40,19 @@ no native iOS app) — but the web version **cannot** do background reminders or
 calls. For the real thing, use the Android app.
 
 **On iPhone:** open the page in Safari, then *Share → Add to Home Screen* so it opens
-full-screen like a real app. Voice **listening** needs a free Groq key pasted into
-Setup ⚙️ — Safari on iOS has never supported the browser's built-in speech recognition,
+full-screen like a real app. Voice **listening** needs a free Gemini key pasted into
+Setup — Safari on iOS has never supported the browser's built-in speech recognition,
 so without a key only the big buttons work; **spoken replies** (text-to-speech) work
 either way. Hands-free "just say LifeOS" isn't available on iOS yet for the same reason.
 
 ---
 
 ## 🧠 Turn on the AI brain (optional, free)
+
+> The **web app** (`web/`, including the iOS story above) uses **Gemini**
+> — paste a free Gemini API key from aistudio.google.com/apikey into Setup.
+> The details below (Groq/Llama/Whisper) describe the **Android app**'s
+> AI backend, which is separate.
 
 Out of the box LifeOS uses the phone's own free voice engine and understands
 commands by keyword in many languages. To *truly understand any language* and let

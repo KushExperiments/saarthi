@@ -14,26 +14,35 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LifeOS">
 <link rel="stylesheet" href="css/style.css">
+<!-- Applies a saved dark/light override before first paint, so switching
+     the setting doesn't show a flash of the old theme on next load. Reads
+     localStorage directly (not app.js — that loads later, after paint). -->
+<script>try{
+  var t = (JSON.parse(localStorage.getItem('saathi_settings'))||{}).theme;
+  if(t==='dark'||t==='light') document.documentElement.dataset.theme = t;
+}catch(e){}</script>
 
 <!-- ============ HOME / ASSISTANT SCREEN ============ -->
 <main id="home" class="screen active">
   <header class="abar">
     <div class="brand"><span class="dot-logo"></span><span class="brandname">LifeOS</span></div>
-    <button class="iconbtn" id="setupBtn" title="Setup" aria-label="Setup">⚙️</button>
+    <span id="clock"></span>
+    <button class="iconbtn" id="setupBtn" title="Setup" aria-label="Setup"><span class="icon icon-settings"></span></button>
   </header>
 
   <div class="convo" id="convo">
     <div class="empty" id="emptyState">
-      <div class="orb"><span class="orb-core"></span></div>
-      <div class="empty-title" id="hello">Hello 👋</div>
+      <div class="bloom"><span class="bloom-halo"></span><span class="bloom-core"></span><span class="sparkle"></span></div>
+      <div class="empty-title" id="hello">Hello</div>
       <div class="empty-sub" id="emptySub">Just say <b>“LifeOS”</b> and ask me anything — in any language</div>
     </div>
   </div>
 
   <div class="dock">
     <button id="talkBtn" class="micbtn" aria-label="Talk to LifeOS">
+      <span class="ripples"><i></i><i></i><i></i></span>
       <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
-      <span class="micicon">🎤</span>
+      <span class="micicon icon icon-mic"></span>
     </button>
     <div class="statusline" id="talkLabel">Say “LifeOS”, or tap to talk</div>
   </div>
@@ -42,29 +51,29 @@
 <!-- ============ MEDICINES SCREEN ============ -->
 <section id="medicines" class="screen">
   <header class="topbar">
-    <button class="iconbtn" data-back>⬅️</button>
+    <button class="iconbtn" data-back><span class="icon icon-back"></span></button>
     <h2>My Medicines</h2>
     <span></span>
   </header>
   <div id="medList" class="list"></div>
-  <button class="bigadd" id="addMedBtn">➕ Add a medicine</button>
+  <button class="bigadd" id="addMedBtn"><span class="icon icon-plus"></span> Add a medicine</button>
 </section>
 
 <!-- ============ CONTACTS / CALL SCREEN ============ -->
 <section id="call" class="screen">
   <header class="topbar">
-    <button class="iconbtn" data-back>⬅️</button>
+    <button class="iconbtn" data-back><span class="icon icon-back"></span></button>
     <h2>Call Someone</h2>
     <span></span>
   </header>
   <div id="contactList" class="list"></div>
-  <button class="bigadd" id="addContactBtn">➕ Add a person</button>
+  <button class="bigadd" id="addContactBtn"><span class="icon icon-plus"></span> Add a person</button>
 </section>
 
 <!-- ============ SETUP SCREEN (for family/caregiver) ============ -->
 <section id="setup" class="screen">
   <header class="topbar">
-    <button class="iconbtn" data-back>⬅️</button>
+    <button class="iconbtn" data-back><span class="icon icon-back"></span></button>
     <h2>Setup</h2>
     <span></span>
   </header>
@@ -73,40 +82,48 @@
     <select id="langSel"></select>
   </div>
   <div class="setuprow">
+    <label>Screen colors</label>
+    <select id="themeSel">
+      <option value="system">Match my phone</option>
+      <option value="light">Light — white background, dark text</option>
+      <option value="dark">Dark — black background, white text</option>
+    </select>
+  </div>
+  <div class="setuprow">
     <label>How slow should I talk?</label>
     <input type="range" id="rateSel" min="0.5" max="1.1" step="0.05" value="0.8">
-    <button class="testbtn" id="testVoice">🔊 Test voice</button>
+    <button class="testbtn" id="testVoice"><span class="icon icon-speaker"></span> Test voice</button>
   </div>
   <div class="setuprow">
     <label>Name to greet</label>
     <input type="text" id="userName" placeholder="e.g. Amma, Dad, Kamala">
   </div>
   <div class="setuprow">
-    <label>🎙️ Hands-free (call it by name)</label>
+    <label><span class="icon icon-mic"></span> Hands-free (call it by name)</label>
     <label class="switchrow"><input type="checkbox" id="wakeToggle"> Listen for the name “LifeOS”</label>
     <p class="hint" style="margin:0">When on, just say “LifeOS …” and it answers — no tapping needed.</p>
   </div>
   <div class="setuprow">
-    <label>👨‍👩‍👧 For family — set up</label>
-    <button class="testbtn" id="openMeds">💊 Medicines</button>
-    <button class="testbtn" id="openPeople">📞 People to call</button>
+    <label><span class="icon icon-people"></span> For family — set up</label>
+    <button class="testbtn" id="openMeds"><span class="icon icon-pill"></span> Medicines</button>
+    <button class="testbtn" id="openPeople"><span class="icon icon-phone"></span> People to call</button>
   </div>
   <div class="setuprow">
-    <label>🧠 AI brain (free Groq key)</label>
-    <input type="password" id="groqKey" placeholder="Paste Groq key (gsk_...) to answer any question">
-    <p class="hint" style="margin:0">With a key it understands any language and answers questions (even maths). Without it, only simple commands work. Free key at console.groq.com.</p>
+    <label><span class="icon icon-sparkle"></span> AI brain (free Gemini key)</label>
+    <input type="password" id="aiKey" placeholder="Paste Gemini API key (AIza...) to answer any question">
+    <p class="hint" style="margin:0">With a key it understands any language and answers questions (even maths). Without it, only simple commands work. Free key at aistudio.google.com/apikey.</p>
   </div>
   <p class="hint">Tip: Add this page to your Home Screen so it opens like an app.
-     Set up medicines and people here, then hand the phone to your elder — they only need the big buttons and the 🎤.</p>
+     Set up medicines and people here, then hand the phone to your elder — they only need the big buttons and the microphone.</p>
 </section>
 
 <!-- ============ MEDICINE REMINDER OVERLAY ============ -->
 <div id="reminder" class="overlay">
   <div class="rembox">
-    <div class="rempill">💊</div>
+    <div class="rempill"><span class="icon icon-pill"></span></div>
     <div class="remtext" id="remText">Time for your medicine</div>
-    <button class="took" id="tookBtn">✅ I took it</button>
-    <button class="snooze" id="snoozeBtn">⏰ Remind me in 5 min</button>
+    <button class="took" id="tookBtn"><span class="icon icon-check"></span> I took it</button>
+    <button class="snooze" id="snoozeBtn"><span class="icon icon-clock"></span> Remind me in 5 min</button>
   </div>
 </div>
 

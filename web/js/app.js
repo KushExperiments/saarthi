@@ -22,10 +22,10 @@ const DB = {
 let state = {
   medicines : DB.load('medicines', []),   // {id,name,times:[],taken:{date,doneTimes:[]}}
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
-  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', groqKey:'', wake:false }),
+  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', aiKey:'', wake:false, theme:'system' }),
 };
 // Pick up an optional key from a git-ignored config.js (window.LIFEOS_KEY)
-if(!state.settings.groqKey && window.LIFEOS_KEY) state.settings.groqKey = window.LIFEOS_KEY;
+if(!state.settings.aiKey && window.LIFEOS_KEY) state.settings.aiKey = window.LIFEOS_KEY;
 const persist = () => {
   DB.save('medicines', state.medicines);
   DB.save('contacts',  state.contacts);
@@ -83,10 +83,10 @@ const Voice = {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){
       // This is the normal path on iOS Safari, which has never supported the
-      // Web Speech API's SpeechRecognition — only the Whisper (Groq) path
+      // Web Speech API's SpeechRecognition — only the cloud (Gemini) path
       // works there, so point the user at the one thing that actually fixes it.
       toast(Rec.supported()
-        ? "This browser can't listen directly. Add a free AI key in Setup ⚙️ to enable voice — or use the big buttons."
+        ? "This browser can't listen directly. Add a free AI key in Setup to enable voice — or use the big buttons."
         : "Sorry, this phone/browser can't listen. Use the big buttons.");
       onEnd&&onEnd(); return;
     }
@@ -139,9 +139,11 @@ function findContact(t){
 }
 
 /* ============================================================
-   WHISPER — record audio and transcribe in ANY language (Groq)
-   Far better than the browser recognizer, especially for Hindi.
+   CLOUD RECORDING — record audio and transcribe in ANY language
+   (Gemini). Far better than the browser recognizer, especially
+   for Hindi.
    ============================================================ */
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const Rec = {
   mr:null, chunks:[], stream:null,
   supported(){ return !!(navigator.mediaDevices && window.MediaRecorder); },
@@ -168,41 +170,49 @@ const Rec = {
 };
 
 /* iOS Safari's MediaRecorder doesn't support audio/webm at all — it records
-   audio/mp4 (or similar) instead. Groq's transcription endpoint uses the
-   uploaded filename's extension as a format hint, so a blob that's actually
-   mp4 audio but labeled "voice.webm" can fail to decode server-side. Derive
-   the real extension from the blob's own reported mime type instead of
-   hardcoding one. */
-function extensionFor(mimeType){
-  const type = (mimeType||'').toLowerCase();
-  if(type.includes('mp4')) return 'mp4';
-  if(type.includes('ogg')) return 'ogg';
-  if(type.includes('wav')) return 'wav';
-  return 'webm';
+   audio/mp4 (or similar) instead. Gemini's inline-audio input keys off the
+   mimeType we send it, not a filename, so this just needs to travel with
+   the blob rather than be hardcoded. */
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onloadend = ()=> resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
-async function whisperTranscribe(blob){
-  const key = state.settings.groqKey;
+/* NOTE: Gemini's documented inline-audio MIME types are wav/mp3/aiff/aac/
+   ogg/flac — audio/webm (what Chrome/Android record by default) isn't on
+   that list, so transcription may fail there even though it works on iOS
+   Safari (which records mp4/aac). Worth verifying with a real key before
+   the demo; Groq's Whisper endpoint explicitly supported webm if this
+   needs to be reverted for the non-iOS path. */
+async function transcribeAudio(blob){
+  const key = state.settings.aiKey;
   if(!key || !blob) return null;
-  const fd = new FormData();
-  fd.append('model','whisper-large-v3');
-  fd.append('response_format','json');
-  const lg = (state.settings.lang||'').split('-')[0];
-  if(lg && lg!=='en') fd.append('language', lg);   // hint helps Hindi etc.
-  fd.append('file', blob, 'voice.'+extensionFor(blob.type));
   try{
-    const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-      method:'POST', headers:{ 'Authorization':'Bearer '+key }, body:fd
+    const data = await blobToBase64(blob);
+    const lg = (state.settings.lang||'').split('-')[0];
+    const hint = lg && lg!=='en' ? ` The speaker's language is likely "${lg}".` : '';
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        contents:[{ parts:[
+          {text:'Transcribe the spoken words in this audio exactly, in the original language.'+hint+' Reply with ONLY the transcribed text, nothing else.'},
+          {inlineData:{ mimeType: blob.type || 'audio/webm', data }}
+        ]}]
+      })
     });
     if(!r.ok) return null;
     const j = await r.json();
-    return (j.text||'').trim();
+    return (j.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
   }catch{ return null; }
 }
 
-/* ---------- AI brain (Groq Llama) — understands anything, answers questions ---------- */
+/* ---------- AI brain (Gemini) — understands anything, answers questions ---------- */
 async function aiUnderstand(raw){
-  const key = state.settings.groqKey;
+  const key = state.settings.aiKey;
   if(!key) return null;
   const names = state.contacts.map(c=>c.name).join(', ') || '(none saved yet)';
   const sys =
@@ -216,18 +226,19 @@ async function aiUnderstand(raw){
     + "message = the message text (for whatsapp/message). "
     + "reply = a short, warm sentence spoken in the SAME language the user used. Keep it simple and clear for an elder.";
   try{
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
       method:'POST',
-      headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json' },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        model:'llama-3.3-70b-versatile', temperature:0.2,
-        response_format:{ type:'json_object' },
-        messages:[ {role:'system',content:sys}, {role:'user',content:raw} ]
+        systemInstruction:{ parts:[{text:sys}] },
+        contents:[{ role:'user', parts:[{text:raw}] }],
+        generationConfig:{ temperature:0.2, responseMimeType:'application/json' }
       })
     });
     if(!r.ok) return null;
     const j = await r.json();
-    return JSON.parse(j.choices[0].message.content);
+    const text = j.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text ? JSON.parse(text) : null;
   }catch{ return null; }
 }
 
@@ -257,7 +268,7 @@ function runIntent(i){
 
 /* Main entry: try the AI brain first (if a key is set), else keyword matching. */
 async function handleCommand(raw){
-  if(state.settings.groqKey){
+  if(state.settings.aiKey){
     setThinking(true);
     const intent = await aiUnderstand(raw);
     if(intent && intent.action){ runIntent(intent); return; }
@@ -281,7 +292,7 @@ function handleCommandLocal(raw){
   }
   if(hasKW(t, KW.medTaken)){
     const n = markAnyDueTaken();
-    speakAndShow(n ? "Well done. I marked your medicine as taken. ✅" : "Okay. I don't see a medicine due right now.");
+    speakAndShow(n ? "Well done. I marked your medicine as taken." : "Okay. I don't see a medicine due right now.");
     return;
   }
   if(hasKW(t, KW.torchOff) && !hasKW(t, KW.call)){ Torch.set(false); speakAndShow("Torch off."); return; }
@@ -305,9 +316,9 @@ function handleCommandLocal(raw){
   }
 
   // fallback
-  speakAndShow(state.settings.groqKey
+  speakAndShow(state.settings.aiKey
     ? "Sorry, I didn't understand. Please try again."
-    : "I can do call, torch, YouTube, and medicine. To answer questions like maths, add the free AI key in Setup ⚙️.");
+    : "I can do call, torch, YouTube, and medicine. To answer questions like maths, add the free AI key in Setup.");
 }
 
 /* ============================================================
@@ -366,13 +377,13 @@ function showReminder(item){
   $('#reminder').classList.add('show');
   Voice.speak(say('med_due')(item.med.name));
   buzz();
-  notify('💊 Medicine time', `Please take ${item.med.name}`);
+  notify('Medicine time', `Please take ${item.med.name}`);
   clearInterval(nagTimer);
   // keep nagging every 60s until verified
   nagTimer = setInterval(()=>{
     if(!activeReminder){ clearInterval(nagTimer); return; }
     Voice.speak(say('med_again')(activeReminder.med.name));
-    buzz(); notify('💊 Please take your medicine', activeReminder.med.name);
+    buzz(); notify('Please take your medicine', activeReminder.med.name);
   }, 60000);
 }
 function verifyTaken(){
@@ -452,6 +463,8 @@ let typingEl = null;
 function setThinking(on){
   if(on){ if(!typingEl){ typingEl = addMsg('lifeos typing', '•••'); } }
   else if(typingEl){ typingEl.remove(); typingEl = null; }
+  const btn = $('#talkBtn');
+  if(btn) btn.classList.toggle('thinking', on);
 }
 function setStatus(t){ const s=$('#talkLabel'); if(s) s.textContent = t; }
 
@@ -465,13 +478,13 @@ function renderMeds(){
     const el = document.createElement('div');
     el.className = 'item'+(done?' taken':'');
     el.innerHTML = `
-      <span class="emoji">💊</span>
+      <span class="emoji"><span class="icon icon-pill"></span></span>
       <div class="grow">
         <div class="big">${escapeHtml(m.name)}</div>
         <div class="sub">${(m.times||[]).map(t=>fmt12(t)).join('  •  ')||'no time set'}</div>
       </div>
-      ${done?'<span class="badge">Taken ✓</span>':'<button class="pillbtn done">✅ Took it</button>'}
-      <button class="pillbtn del" title="Remove">🗑️</button>`;
+      ${done?'<span class="badge-taken">Taken</span>':'<button class="pillbtn done"><span class="icon icon-check"></span> Took it</button>'}
+      <button class="pillbtn del" title="Remove"><span class="icon icon-trash"></span></button>`;
     if(!done) el.querySelector('.done').onclick = ()=>{
       (m.times||[]).forEach(t=>Meds.markTaken(m,t)); Voice.speak("Well done.");
     };
@@ -488,11 +501,11 @@ function renderContacts(){
     const el = document.createElement('div');
     el.className='item';
     el.innerHTML = `
-      <span class="emoji">🧑</span>
+      <span class="emoji"><span class="icon icon-people"></span></span>
       <div class="grow"><div class="big">${escapeHtml(c.name)}</div><div class="sub">${escapeHtml(c.phone)}</div></div>
-      <button class="pillbtn go">📞</button>
-      <button class="pillbtn wa">🟢</button>
-      <button class="pillbtn del">🗑️</button>`;
+      <button class="pillbtn go" title="Call"><span class="icon icon-phone"></span></button>
+      <button class="pillbtn wa" title="WhatsApp"><span class="icon icon-chat"></span></button>
+      <button class="pillbtn del" title="Remove"><span class="icon icon-trash"></span></button>`;
     el.querySelector('.go').onclick = ()=>openCall(c);
     el.querySelector('.wa').onclick = ()=>openWhatsApp(c);
     el.querySelector('.del').onclick = ()=>{ if(confirm('Remove '+c.name+'?')){ state.contacts=state.contacts.filter(x=>x.id!==c.id); persist(); renderContacts(); } };
@@ -512,9 +525,9 @@ function openForm(title, fields, onSave){
       input = document.createElement('div');
       const chips = document.createElement('div'); chips.className='timerow';
       const add = document.createElement('input'); add.type='time';
-      const btn = document.createElement('button'); btn.type='button'; btn.textContent='➕ Add time'; btn.className='testbtn';
+      const btn = document.createElement('button'); btn.type='button'; btn.innerHTML='<span class="icon icon-plus"></span> Add time'; btn.className='testbtn';
       let times = f.value ? [...f.value] : [];
-      const draw = ()=>{ chips.innerHTML=''; times.forEach((t,i)=>{ const c=document.createElement('span'); c.className='timechip'; c.innerHTML=fmt12(t)+' <button type="button">✕</button>'; c.querySelector('button').onclick=()=>{times.splice(i,1);draw();}; chips.appendChild(c); }); };
+      const draw = ()=>{ chips.innerHTML=''; times.forEach((t,i)=>{ const c=document.createElement('span'); c.className='timechip'; c.innerHTML=fmt12(t)+' <button type="button">&times;</button>'; c.querySelector('button').onclick=()=>{times.splice(i,1);draw();}; chips.appendChild(c); }); };
       btn.onclick=()=>{ if(add.value && !times.includes(add.value)){ times.push(add.value); times.sort(); draw(); } };
       draw();
       input.append(chips, add, btn);
@@ -557,7 +570,7 @@ function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); 
    handles whatever was said after it. Hands-free.
    ============================================================ */
 /* Continuous background listening needs the Web Speech API's
-   SpeechRecognition — unlike one-shot tap-to-talk, there's no Whisper
+   SpeechRecognition — unlike one-shot tap-to-talk, there's no cloud
    fallback for this (it would mean recording+uploading audio nonstop).
    iOS Safari has never supported SpeechRecognition, so hands-free simply
    can't work there yet, key or no key. */
@@ -594,29 +607,29 @@ const Wake = {
 function pauseWake(){ if(Wake.on){ Wake.paused=true; try{Wake.rec && Wake.rec.stop();}catch{} } }
 function resumeWake(){ if(state.settings.wake){ Wake.paused=false; if(!Wake.rec) Wake.start(); else { try{Wake.rec.start();}catch{} } } }
 
-/* ---------- Listening flow: Whisper (tap to start / tap to stop) or browser ---------- */
+/* ---------- Listening flow: cloud recording (tap to start / tap to stop) or browser ---------- */
 let listenBusy = false;
 async function onTalk(){
   const btn = $('#talkBtn');
   if(btn.classList.contains('listening')){
-    if(btn.dataset.mode === 'whisper') await finishWhisper();   // stop & transcribe
+    if(btn.dataset.mode === 'cloud') await finishCloudListen();   // stop & transcribe
     return;
   }
   if(listenBusy) return;
   pauseWake();                                    // free the mic
-  if(state.settings.groqKey && Rec.supported()){
+  if(state.settings.aiKey && Rec.supported()){
     try{
       await Rec.start();
-      btn.classList.add('listening'); btn.dataset.mode = 'whisper';
+      btn.classList.add('listening'); btn.dataset.mode = 'cloud';
       setStatus('Listening… tap to stop');
     }catch(e){ browserListen(); }
   } else browserListen();
 }
-async function finishWhisper(){
+async function finishCloudListen(){
   const btn = $('#talkBtn'); btn.classList.remove('listening'); btn.dataset.mode='';
   listenBusy = true; setStatus('One moment…'); setThinking(true);
   const blob = await Rec.stop();
-  const text = await whisperTranscribe(blob);
+  const text = await transcribeAudio(blob);
   listenBusy = false; setStatus(defaultStatus());
   if(text){ addMsg('you', text); await handleCommand(text); }
   else { setThinking(false); addMsg('lifeos', "I could not hear that. Let me try another way."); browserListen(); return; }
@@ -633,7 +646,7 @@ function browserListen(){
 function defaultStatus(){ return state.settings.wake ? 'Say “LifeOS”, or tap to talk' : 'Tap to talk'; }
 
 function wire(){
-  // talk button — Whisper (record→transcribe) when a key is set, else browser voice
+  // talk button — cloud record→transcribe (Gemini) when a key is set, else browser voice
   $('#talkBtn').onclick = () => onTalk();
 
   // quick-action chips
@@ -671,10 +684,11 @@ function wire(){
   const langSel=$('#langSel');
   LANGS.forEach(([code,label])=>{ const o=document.createElement('option'); o.value=code; o.textContent=label; langSel.appendChild(o); });
   langSel.onchange = ()=>{ state.settings.lang=langSel.value; persist(); Voice.speak(say('greet')); };
+  $('#themeSel').onchange = e=>{ state.settings.theme=e.target.value; persist(); applyTheme(); };
   $('#rateSel').oninput = e=>{ state.settings.rate=parseFloat(e.target.value); persist(); };
   $('#testVoice').onclick = ()=> Voice.speak(say('greet'));
   $('#userName').oninput = e=>{ state.settings.name=e.target.value.trim(); persist(); };
-  $('#groqKey').oninput = e=>{ state.settings.groqKey=e.target.value.trim(); persist(); };
+  $('#aiKey').oninput = e=>{ state.settings.aiKey=e.target.value.trim(); persist(); };
 
   // hands-free wake word — disable rather than let it silently do nothing
   // (this is the normal case on iOS Safari, which has no continuous
@@ -699,18 +713,32 @@ function wire(){
 }
 function fillSetup(){
   $('#langSel').value=state.settings.lang;
+  $('#themeSel').value=state.settings.theme||'system';
   $('#rateSel').value=state.settings.rate;
   $('#userName').value=state.settings.name;
-  $('#groqKey').value=state.settings.groqKey||'';
+  $('#aiKey').value=state.settings.aiKey||'';
   $('#wakeToggle').checked=!!state.settings.wake;
+}
+
+/* "system" leaves data-theme unset so the prefers-color-scheme media query
+   keeps deciding; "dark"/"light" set the attribute, which wins over the
+   media query by specificity (see style.css) — a real override, not just
+   a default. */
+function applyTheme(){
+  const t = state.settings.theme;
+  if(t==='dark' || t==='light') document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+  const tc = document.querySelector('meta[name=theme-color]');
+  if(tc) tc.setAttribute('content', t==='dark' ? '#0d1613' : '#159a6b');
 }
 
 /* ============================================================
    START
    ============================================================ */
 function start(){
+  applyTheme();
   wire();
-  $('#hello').textContent = state.settings.name ? `Hello, ${state.settings.name} 👋` : 'Hello 👋';
+  $('#hello').textContent = state.settings.name ? `Hello, ${state.settings.name}` : 'Hello';
   setStatus(defaultStatus());
   tickClock(); setInterval(tickClock, 15000);
   checkReminders(); setInterval(checkReminders, 20000);
