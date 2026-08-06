@@ -4,34 +4,37 @@ import com.lifeos.app.core.common.DispatcherProvider
 import com.lifeos.app.core.common.Outcome
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val STT_MODEL = "whisper-large-v3"
-private const val CHAT_MODEL = "llama-3.3-70b-versatile"
-
 /**
- * Direct port of the legacy prototype's `com.lifeos.app.Ai.Groq` object
- * (app/src/main/java/com/lifeos/app/Ai.kt) behind the [AiProvider] seam.
- * Whisper (whisper-large-v3) transcribes; Llama 3.3 70B understands intent.
- * Failures return [Outcome.Failure] instead of the legacy code's silent
- * `null`, so callers can't accidentally swallow "no key" vs. "network down"
- * vs. "bad response" as the same case.
+ * [AiProvider] backed by Google's Gemini `generateContent` REST API — one
+ * endpoint for both transcription (inline audio) and understanding (text),
+ * unlike Groq's separate Whisper/Llama endpoints. Failures return
+ * [Outcome.Failure] instead of throwing, same contract as the provider this
+ * replaced.
+ *
+ * NOTE: Gemini's documented inline-audio MIME types are wav/mp3/aiff/aac/
+ * ogg/flac. Android's recorder produces AAC audio (typically in an .m4a
+ * container), which is sent here as "audio/aac" — worth verifying against
+ * a real device recording before relying on it, since [transcribe] isn't
+ * wired to a live recording call site yet (voice input currently goes
+ * through the on-device SpeechRecognizer in feature:voice; this method
+ * exists for the [AiProvider] contract and is covered by its own test).
  */
 @Singleton
-class GroqAiProvider @Inject constructor(
+class GeminiAiProvider @Inject constructor(
     private val apiKeyStore: AiApiKeyStore,
     private val client: OkHttpClient,
     private val dispatchers: DispatcherProvider,
-    private val endpoints: GroqEndpoints,
+    private val endpoints: GeminiEndpoints,
 ) : AiProvider {
 
     override suspend fun verifyKey(): Outcome<Unit> = withContext(dispatchers.io) {
@@ -39,15 +42,14 @@ class GroqAiProvider @Inject constructor(
         if (key.isNullOrBlank()) return@withContext Outcome.Failure(NoApiKeyException())
 
         try {
-            val request = Request.Builder().url(endpoints.modelsUrl)
-                .addHeader("Authorization", "Bearer $key")
+            val request = Request.Builder().url(withKey(endpoints.modelsUrl, key))
                 .get()
                 .build()
             client.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     Outcome.Success(Unit)
                 } else {
-                    Outcome.Failure(IllegalStateException("Groq key check failed: HTTP ${response.code}"))
+                    Outcome.Failure(IllegalStateException("Gemini key check failed: HTTP ${response.code}"))
                 }
             }
         } catch (e: Exception) {
@@ -61,22 +63,40 @@ class GroqAiProvider @Inject constructor(
         if (!audio.exists()) return@withContext Outcome.Failure(IllegalArgumentException("Audio file does not exist"))
 
         try {
-            val body = MultipartBody.Builder().setType(MultipartBody.FORM)
-                .addFormDataPart("model", STT_MODEL)
-                .addFormDataPart("response_format", "json")
-                .addFormDataPart("file", audio.name, audio.asRequestBody("audio/m4a".toMediaType()))
-                .build()
-            val request = Request.Builder().url(endpoints.sttUrl)
-                .addHeader("Authorization", "Bearer $key")
-                .post(body)
+            val base64Audio = Base64.getEncoder().encodeToString(audio.readBytes())
+            val payload = JSONObject().put(
+                "contents",
+                JSONArray().put(
+                    JSONObject().put(
+                        "parts",
+                        JSONArray()
+                            .put(
+                                JSONObject().put(
+                                    "text",
+                                    "Transcribe the spoken words in this audio exactly, in the original " +
+                                        "language. Reply with ONLY the transcribed text, nothing else.",
+                                ),
+                            )
+                            .put(
+                                JSONObject().put(
+                                    "inlineData",
+                                    JSONObject().put("mimeType", "audio/aac").put("data", base64Audio),
+                                ),
+                            ),
+                    ),
+                ),
+            )
+            val request = Request.Builder().url(withKey(endpoints.generateContentUrl, key))
+                .addHeader("Content-Type", "application/json")
+                .post(payload.toString().toRequestBody("application/json".toMediaType()))
                 .build()
             client.newCall(request).execute().use { response ->
                 val raw = response.body?.string()
                     ?: return@withContext Outcome.Failure(IllegalStateException("Empty response body"))
                 if (!response.isSuccessful) {
-                    return@withContext Outcome.Failure(IllegalStateException("Groq STT failed: HTTP ${response.code}"))
+                    return@withContext Outcome.Failure(IllegalStateException("Gemini STT failed: HTTP ${response.code}"))
                 }
-                val text = JSONObject(raw).optString("text").trim()
+                val text = firstCandidateText(raw).trim()
                 if (text.isBlank()) Outcome.Failure(IllegalStateException("Empty transcription")) else Outcome.Success(text)
             }
         } catch (e: Exception) {
@@ -91,17 +111,19 @@ class GroqAiProvider @Inject constructor(
 
         try {
             val payload = JSONObject()
-                .put("model", CHAT_MODEL)
-                .put("temperature", 0.2)
-                .put("response_format", JSONObject().put("type", "json_object"))
+                .put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", systemPrompt(request)))))
                 .put(
-                    "messages",
-                    JSONArray()
-                        .put(JSONObject().put("role", "system").put("content", systemPrompt(request)))
-                        .put(JSONObject().put("role", "user").put("content", request.transcript)),
+                    "contents",
+                    JSONArray().put(
+                        JSONObject().put("role", "user")
+                            .put("parts", JSONArray().put(JSONObject().put("text", request.transcript))),
+                    ),
                 )
-            val httpRequest = Request.Builder().url(endpoints.chatUrl)
-                .addHeader("Authorization", "Bearer $key")
+                .put(
+                    "generationConfig",
+                    JSONObject().put("temperature", 0.2).put("responseMimeType", "application/json"),
+                )
+            val httpRequest = Request.Builder().url(withKey(endpoints.generateContentUrl, key))
                 .addHeader("Content-Type", "application/json")
                 .post(payload.toString().toRequestBody("application/json".toMediaType()))
                 .build()
@@ -109,11 +131,9 @@ class GroqAiProvider @Inject constructor(
                 val raw = response.body?.string()
                     ?: return@withContext Outcome.Failure(IllegalStateException("Empty response body"))
                 if (!response.isSuccessful) {
-                    return@withContext Outcome.Failure(IllegalStateException("Groq chat failed: HTTP ${response.code}"))
+                    return@withContext Outcome.Failure(IllegalStateException("Gemini chat failed: HTTP ${response.code}"))
                 }
-                val content = JSONObject(raw).getJSONArray("choices").getJSONObject(0)
-                    .getJSONObject("message").getString("content")
-                val intent = JSONObject(stripFences(content))
+                val intent = JSONObject(stripFences(firstCandidateText(raw)))
                 Outcome.Success(
                     AiIntent(
                         action = intent.optString("action", "none"),
@@ -128,6 +148,14 @@ class GroqAiProvider @Inject constructor(
             Outcome.Failure(e)
         }
     }
+
+    private fun firstCandidateText(rawResponse: String): String =
+        JSONObject(rawResponse).getJSONArray("candidates").getJSONObject(0)
+            .getJSONObject("content").getJSONArray("parts").getJSONObject(0)
+            .getString("text")
+
+    private fun withKey(url: String, key: String): String =
+        url + (if (url.contains("?")) "&" else "?") + "key=" + key
 
     private fun systemPrompt(request: UnderstandRequest): String = buildString {
         append("You are LifeOS, a kind voice helper for an elderly person. ")
@@ -151,7 +179,7 @@ class GroqAiProvider @Inject constructor(
         append("Keep reply simple and slow-friendly for an elder. Do not add anything outside the JSON.")
     }
 
-    /** Strips ```json fences some models add despite response_format: json_object. */
+    /** Strips ```json fences some models add despite responseMimeType: application/json. */
     private fun stripFences(raw: String): String {
         val trimmed = raw.trim()
         return if (trimmed.startsWith("```")) {
@@ -162,4 +190,4 @@ class GroqAiProvider @Inject constructor(
     }
 }
 
-class NoApiKeyException : Exception("No Groq API key configured")
+class NoApiKeyException : Exception("No Gemini API key configured")

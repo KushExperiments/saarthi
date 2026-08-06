@@ -7,7 +7,7 @@ import java.io.File
  * Swappable AI brain contract (Memory §17 / Architecture §10's "Stateless
  * AI" pattern) — callers depend on this interface only, never on a specific
  * provider, so a decade-long product isn't hard-tied to one vendor/model.
- * v1 ships exactly one implementation, [GroqAiProvider]; a circuit
+ * v1 ships exactly one implementation, [GeminiAiProvider]; a circuit
  * breaker/multi-provider fallback (Master Plan §8) is a deliberate, later
  * addition this seam makes possible without touching call sites.
  */

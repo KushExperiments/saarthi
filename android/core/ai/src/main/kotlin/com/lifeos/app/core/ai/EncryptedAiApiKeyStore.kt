@@ -9,12 +9,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PREFS_FILE = "lifeos_ai_prefs"
-private const val KEY_API_KEY = "groq_api_key"
+private const val KEY_API_KEY = "gemini_api_key"
 
 /**
  * Keystore-backed storage, same technique as core:security's
  * EncryptedPrefsAuthRepository (own prefs file, AES256_GCM master key) but
- * kept independent of core:security — a Groq key is a different concern
+ * kept independent of core:security — a Gemini key is a different concern
  * from PIN auth, not a reason to add a cross-module dependency.
  *
  * No unit test yet: same deliberate deferral as EncryptedPrefsAuthRepository

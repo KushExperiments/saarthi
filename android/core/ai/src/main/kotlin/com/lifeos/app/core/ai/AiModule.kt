@@ -14,7 +14,7 @@ import javax.inject.Singleton
 abstract class AiModule {
     @Binds
     @Singleton
-    abstract fun bindAiProvider(impl: GroqAiProvider): AiProvider
+    abstract fun bindAiProvider(impl: GeminiAiProvider): AiProvider
 
     @Binds
     @Singleton
@@ -31,6 +31,6 @@ abstract class AiModule {
 
         @Provides
         @Singleton
-        fun provideGroqEndpoints(): GroqEndpoints = GroqEndpoints()
+        fun provideGeminiEndpoints(): GeminiEndpoints = GeminiEndpoints()
     }
 }

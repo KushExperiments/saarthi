@@ -126,7 +126,7 @@ private fun AiAssistantSetupCard(viewModel: AiSettingsViewModel) {
             Text(text = "AI Assistant Setup", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Add a free Groq key (console.groq.com) to let LifeOS understand any " +
+                text = "Add a free Gemini key (aistudio.google.com/apikey) to let LifeOS understand any " +
                     "language freely and answer questions — optional, everything else works without it.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -135,7 +135,7 @@ private fun AiAssistantSetupCard(viewModel: AiSettingsViewModel) {
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = viewModel::onApiKeyChanged,
-                label = { Text("Groq API key") },
+                label = { Text("Gemini API key") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
             )

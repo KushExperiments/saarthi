@@ -15,26 +15,25 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.File
 
-class GroqAiProviderTest {
+class GeminiAiProviderTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var server: MockWebServer
     private lateinit var apiKeyStore: FakeAiApiKeyStore
-    private lateinit var provider: GroqAiProvider
+    private lateinit var provider: GeminiAiProvider
 
     @Before
     fun setUp() {
         server = MockWebServer()
         server.start()
         apiKeyStore = FakeAiApiKeyStore()
-        val endpoints = GroqEndpoints(
-            sttUrl = server.url("/audio/transcriptions").toString(),
-            chatUrl = server.url("/chat/completions").toString(),
+        val endpoints = GeminiEndpoints(
+            generateContentUrl = server.url("/models/gemini-2.0-flash:generateContent").toString(),
             modelsUrl = server.url("/models").toString(),
         )
-        provider = GroqAiProvider(apiKeyStore, OkHttpClient(), TestDispatcherProvider(), endpoints)
+        provider = GeminiAiProvider(apiKeyStore, OkHttpClient(), TestDispatcherProvider(), endpoints)
     }
 
     @After
@@ -42,9 +41,14 @@ class GroqAiProviderTest {
         server.shutdown()
     }
 
+    private fun candidateResponse(text: String): String {
+        val escaped = org.json.JSONObject.quote(text)
+        return """{"candidates":[{"content":{"parts":[{"text":$escaped}]}}]}"""
+    }
+
     @Test
     fun `transcribe returns the recognized text on success`() = runTest {
-        server.enqueue(MockResponse().setBody("""{"text":"call beta"}"""))
+        server.enqueue(MockResponse().setBody(candidateResponse("call beta")))
         val audio = File.createTempFile("lifeos_test", ".m4a").apply { writeText("fake audio") }
 
         val result = provider.transcribe(audio)
@@ -52,8 +56,8 @@ class GroqAiProviderTest {
         assertEquals(Outcome.Success("call beta"), result)
         val recorded = server.takeRequest()
         assertEquals("POST", recorded.method)
-        assertTrue(recorded.getHeader("Authorization")?.startsWith("Bearer ") == true)
-        assertTrue(recorded.body.readUtf8().contains("whisper-large-v3"))
+        assertTrue(recorded.path?.contains("key=test-key") == true)
+        assertTrue(recorded.body.readUtf8().contains("audio/aac"))
     }
 
     @Test
@@ -74,11 +78,7 @@ class GroqAiProviderTest {
             {"action":"call","person":"Beta","query":"","message":"","reply":"Calling Beta."}
             ```
         """.trimIndent()
-        server.enqueue(
-            MockResponse().setBody(
-                """{"choices":[{"message":{"content":${org.json.JSONObject.quote(fenced)}}}]}""",
-            ),
-        )
+        server.enqueue(MockResponse().setBody(candidateResponse(fenced)))
 
         val result = provider.understand(UnderstandRequest("call beta", listOf("Beta"), "en"))
 
@@ -88,8 +88,8 @@ class GroqAiProviderTest {
         )
         val recorded = server.takeRequest()
         val sentBody = recorded.body.readUtf8()
-        assertTrue(sentBody.contains("llama-3.3-70b-versatile"))
-        assertTrue(sentBody.contains("\"type\":\"json_object\""))
+        assertTrue(sentBody.contains("systemInstruction"))
+        assertTrue(sentBody.contains("\"responseMimeType\":\"application/json\""))
     }
 
     @Test
@@ -102,15 +102,16 @@ class GroqAiProviderTest {
     }
 
     @Test
-    fun `verifyKey succeeds without spending a chat completion`() = runTest {
-        server.enqueue(MockResponse().setBody("""{"data":[]}"""))
+    fun `verifyKey succeeds without spending a generateContent call`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"models":[]}"""))
 
         val result = provider.verifyKey()
 
         assertEquals(Outcome.Success(Unit), result)
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
-        assertEquals("/models", recorded.path)
+        assertTrue(recorded.path?.startsWith("/models") == true)
+        assertTrue(recorded.path?.contains("key=test-key") == true)
     }
 
     @Test
