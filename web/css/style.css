@@ -4,6 +4,9 @@
   --danger:#e05656; --line:#e6efe9; --ring:rgba(21,154,107,.28);
   --shadow:0 10px 30px rgba(16,60,42,.10); --shadow-sm:0 4px 14px rgba(16,60,42,.08);
   --r:26px;
+  /* A softer settle than a linear/default ease — used on every interactive
+     press/lift so touches feel weighted rather than snapping instantly. */
+  --ease-settle:cubic-bezier(.22,.9,.32,1.12);
 }
 @media (prefers-color-scheme:dark){
   :root{
@@ -14,6 +17,14 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
+/* Keyboard-navigation focus ring — buttons/cards had no visible focus state
+   at all before this (only text inputs did), a real gap for anyone tabbing
+   through with a keyboard or switch-access device rather than touching.
+   :focus-visible (not plain :focus) so mouse/touch taps stay clean. */
+button:focus-visible,.card:focus-visible,.item:focus-visible,.chip:focus-visible,
+a:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid var(--brand-l); outline-offset:3px; border-radius:inherit;
+}
 body{
   font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;
   color:var(--ink); font-size:20px; line-height:1.45;
@@ -212,8 +223,17 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
 .chip:active{transform:scale(.95)}
 .micbtn{position:relative; width:88px; height:88px; border-radius:50%; border:none; cursor:pointer;
   background:linear-gradient(160deg,var(--brand-l),var(--brand-d)); color:#fff;
-  box-shadow:0 12px 30px var(--ring); display:grid; place-items:center; transition:transform .12s}
+  box-shadow:0 12px 30px var(--ring); display:grid; place-items:center;
+  transition:transform .15s var(--ease-settle);
+  /* A slow, calm "breathing" glow at rest — the same idle-presence motion
+     language the Android app's VoiceOrb uses (2.4s breathe cycle), so the
+     mic reads as quietly alive rather than a static button waiting to be
+     pressed. Pauses automatically once .listening's own pulse takes over. */
+  animation:micBreathe 2.4s ease-in-out infinite;
+}
+@keyframes micBreathe{0%,100%{box-shadow:0 12px 30px var(--ring)}50%{box-shadow:0 14px 38px 4px var(--ring)}}
 .micbtn:active{transform:scale(.94)}
+.micbtn.listening{animation:pulse2 1.4s infinite}
 .micicon{font-size:38px}
 .waves{position:absolute; inset:0; display:none; align-items:center; justify-content:center; gap:5px}
 .waves i{width:6px; height:16px; border-radius:3px; background:#fff; animation:eq 1s ease-in-out infinite}
