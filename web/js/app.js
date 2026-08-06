@@ -81,7 +81,15 @@ const Voice = {
   /* one-shot listen; returns transcript via callback */
   listen(onResult, onEnd){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ toast("Sorry, this phone/browser can't listen. Use the big buttons."); onEnd&&onEnd(); return; }
+    if(!SR){
+      // This is the normal path on iOS Safari, which has never supported the
+      // Web Speech API's SpeechRecognition — only the Whisper (Groq) path
+      // works there, so point the user at the one thing that actually fixes it.
+      toast(Rec.supported()
+        ? "This browser can't listen directly. Add a free AI key in Setup ⚙️ to enable voice — or use the big buttons."
+        : "Sorry, this phone/browser can't listen. Use the big buttons.");
+      onEnd&&onEnd(); return;
+    }
     const rec = new SR();
     rec.lang = state.settings.lang;
     rec.interimResults = false;
@@ -159,6 +167,20 @@ const Rec = {
   }
 };
 
+/* iOS Safari's MediaRecorder doesn't support audio/webm at all — it records
+   audio/mp4 (or similar) instead. Groq's transcription endpoint uses the
+   uploaded filename's extension as a format hint, so a blob that's actually
+   mp4 audio but labeled "voice.webm" can fail to decode server-side. Derive
+   the real extension from the blob's own reported mime type instead of
+   hardcoding one. */
+function extensionFor(mimeType){
+  const type = (mimeType||'').toLowerCase();
+  if(type.includes('mp4')) return 'mp4';
+  if(type.includes('ogg')) return 'ogg';
+  if(type.includes('wav')) return 'wav';
+  return 'webm';
+}
+
 async function whisperTranscribe(blob){
   const key = state.settings.groqKey;
   if(!key || !blob) return null;
@@ -167,7 +189,7 @@ async function whisperTranscribe(blob){
   fd.append('response_format','json');
   const lg = (state.settings.lang||'').split('-')[0];
   if(lg && lg!=='en') fd.append('language', lg);   // hint helps Hindi etc.
-  fd.append('file', blob, 'voice.webm');
+  fd.append('file', blob, 'voice.'+extensionFor(blob.type));
   try{
     const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method:'POST', headers:{ 'Authorization':'Bearer '+key }, body:fd
@@ -534,6 +556,13 @@ function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); 
    Lightweight on-device recognition; when it hears the name it
    handles whatever was said after it. Hands-free.
    ============================================================ */
+/* Continuous background listening needs the Web Speech API's
+   SpeechRecognition — unlike one-shot tap-to-talk, there's no Whisper
+   fallback for this (it would mean recording+uploading audio nonstop).
+   iOS Safari has never supported SpeechRecognition, so hands-free simply
+   can't work there yet, key or no key. */
+const SUPPORTS_WAKE = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
 const Wake = {
   rec:null, on:false, paused:false,
   words:['lifeos','sarathi','saarti','sarthi','साथी','सारथी','साथि','ساتھی'],
@@ -647,13 +676,23 @@ function wire(){
   $('#userName').oninput = e=>{ state.settings.name=e.target.value.trim(); persist(); };
   $('#groqKey').oninput = e=>{ state.settings.groqKey=e.target.value.trim(); persist(); };
 
-  // hands-free wake word
-  $('#wakeToggle').onchange = e=>{
-    state.settings.wake = e.target.checked; persist();
-    if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “LifeOS”.'); }
-    else Wake.stop();
-    setStatus(defaultStatus());
-  };
+  // hands-free wake word — disable rather than let it silently do nothing
+  // (this is the normal case on iOS Safari, which has no continuous
+  // SpeechRecognition support at all, key or no key).
+  const wakeToggle = $('#wakeToggle');
+  if(!SUPPORTS_WAKE){
+    wakeToggle.checked = false; wakeToggle.disabled = true;
+    state.settings.wake = false; persist();
+    const hint = wakeToggle.closest('.setuprow').querySelector('.hint');
+    if(hint) hint.textContent = "Hands-free isn't available in this browser yet — tap the microphone button instead.";
+  } else {
+    wakeToggle.onchange = e=>{
+      state.settings.wake = e.target.checked; persist();
+      if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “LifeOS”.'); }
+      else Wake.stop();
+      setStatus(defaultStatus());
+    };
+  }
   // caregiver management (moved out of the elder's home screen)
   $('#openMeds').onclick = ()=>{ renderMeds(); go('medicines'); };
   $('#openPeople').onclick = ()=>{ renderContacts(); go('call'); };

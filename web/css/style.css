@@ -29,7 +29,10 @@ body{
 @keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
 
 /* ---------- Top bar ---------- */
-.topbar{display:flex; align-items:center; gap:12px; margin-bottom:6px}
+/* Standalone iOS home-screen mode runs full-screen behind the notch/Dynamic
+   Island — this padding is a no-op in a normal browser tab (env() resolves
+   to 0 there) but keeps the header clear of the status bar once installed. */
+.topbar{display:flex; align-items:center; gap:12px; margin-bottom:6px; padding-top:env(safe-area-inset-top)}
 .topbar h2{font-size:26px; margin:0; font-weight:800}
 .brand{display:flex; align-items:center; gap:8px; font-weight:800; margin-right:auto}
 .brand .logo{font-size:26px; filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
@@ -167,7 +170,7 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
    ASSISTANT HOME — conversation + animated listening mic
    ============================================================ */
 #home.active{display:flex; flex-direction:column; height:100dvh; max-width:620px; padding:0}
-.abar{display:flex; align-items:center; justify-content:space-between; padding:16px 18px 6px}
+.abar{display:flex; align-items:center; justify-content:space-between; padding:calc(16px + env(safe-area-inset-top)) 18px 6px}
 .abar .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:22px; margin:0}
 .dot-logo{width:18px; height:18px; border-radius:50%;
   background:conic-gradient(from 0deg,#37c98f,#159a6b,#4a90d9,#8a7bff,#37c98f);

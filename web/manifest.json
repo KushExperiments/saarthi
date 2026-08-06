@@ -1,0 +1,19 @@
+{
+  "name": "LifeOS — Your Helper",
+  "short_name": "LifeOS",
+  "description": "A simple voice helper for elders — call family, medicine reminders, and more, all by voice.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F7F4",
+  "theme_color": "#159A6B",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -35,8 +35,15 @@ is locked.
 | 🧓 **Elder-friendly** | Big text, big buttons, one microphone. Family sets things up once. |
 
 There is also a lightweight **web version** in [`web/`](web/) (works in any phone
-browser) — but the web version **cannot** do background reminders or direct calls.
-For the real thing, use the Android app.
+browser, including **iPhone/Safari** — this is LifeOS's iOS story today, since there's
+no native iOS app) — but the web version **cannot** do background reminders or direct
+calls. For the real thing, use the Android app.
+
+**On iPhone:** open the page in Safari, then *Share → Add to Home Screen* so it opens
+full-screen like a real app. Voice **listening** needs a free Groq key pasted into
+Setup ⚙️ — Safari on iOS has never supported the browser's built-in speech recognition,
+so without a key only the big buttons work; **spoken replies** (text-to-speech) work
+either way. Hands-free "just say LifeOS" isn't available on iOS yet for the same reason.
 
 ---
 

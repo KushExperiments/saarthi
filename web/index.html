@@ -3,7 +3,16 @@
 <meta name="theme-color" content="#159a6b">
 <title>LifeOS — Your Helper</title>
 <link rel="manifest" href="manifest.json">
+<!-- iOS "Add to Home Screen" — without these it opens inside Safari's
+     browser chrome instead of full-screen like a real app. Apple's own
+     apple-touch-icon has historically wanted PNG, not SVG; icons/icon.svg
+     is provided as the best available fallback in this environment — swap
+     in a 180x180 PNG at the same path before a real App Store-style demo
+     if you want a crisp home-screen icon on older iOS versions. -->
 <link rel="apple-touch-icon" href="icons/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LifeOS">
 <link rel="stylesheet" href="css/style.css">
 
 <!-- ============ HOME / ASSISTANT SCREEN ============ -->
