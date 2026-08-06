@@ -1,7 +1,15 @@
 // Minimal offline shell cache — deliberately narrow. Only ever serves the
-// app's own static files from cache; every other request (Gemini API calls,
+// app's own static files; every other request (Gemini API calls,
 // tel:/sms:/wa.me links, YouTube) always goes straight to the network.
-const CACHE_NAME = 'lifeos-shell-v1';
+//
+// Network-first, not cache-first: a returning visitor should always see
+// the latest deployed UI while online, and only fall back to the cached
+// shell when actually offline. (An earlier cache-first version of this
+// file meant every UI update was invisible to returning visitors until
+// the cache name was bumped by hand — bumping it here once to clear that
+// stale cache, but the strategy change below is what actually fixes it
+// going forward, not the version bump.)
+const CACHE_NAME = 'lifeos-shell-v2';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -34,6 +42,12 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
+    fetch(event.request)
+      .then((fresh) => {
+        const copy = fresh.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return fresh;
+      })
+      .catch(() => caches.match(event.request)),
   );
 });
