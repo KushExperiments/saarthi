@@ -4,7 +4,7 @@
   --accent-blue:#4a90d9; --accent-violet:#8a7bff;
   --danger:#e05656; --line:#e6efe9; --ring:rgba(21,154,107,.28);
   --shadow:0 10px 30px rgba(16,60,42,.10); --shadow-sm:0 4px 14px rgba(16,60,42,.08);
-  /* The gradient every "this matters / this is LifeOS" surface pulls from —
+  /* The gradient every "this matters / this is Juno" surface pulls from —
      the same three stops as the bloom/mic-thinking motion, so accent color
      reads as one consistent identity rather than a different green per
      component. */
@@ -77,9 +77,8 @@ a:focus-visible,select:focus-visible,[tabindex]:focus-visible{
 .icon-clock{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='13' r='8'/%3E%3Cpath d='M12 9v4l3 2'/%3E%3Cpath d='M9 2h6'/%3E%3C/g%3E%3C/svg%3E")}
 .icon-people{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14.2c2.6.4 4.5 2.6 4.5 5.3'/%3E%3C/g%3E%3C/svg%3E")}
 .icon-sparkle{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z'/%3E%3C/svg%3E")}
-.icon-send{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M12 19V5M5 12l7-7 7 7'/%3E%3C/svg%3E")}
 .icon-settings,.icon-back,.icon-mic,.icon-plus,.icon-speaker,.icon-pill,.icon-phone,
-.icon-chat,.icon-check,.icon-trash,.icon-clock,.icon-people,.icon-sparkle,.icon-send{
+.icon-chat,.icon-check,.icon-trash,.icon-clock,.icon-people,.icon-sparkle{
   mask-image:var(--i); -webkit-mask-image:var(--i)
 }
 body{
@@ -222,7 +221,7 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
   background:var(--card); border:1px solid var(--line); padding:7px 13px; border-radius:999px}
 /* Four-dot mark — echoes Google/Gemini's own four-dot brand language
    ("a reference point for Gemini's rounded, optimistic language") but in
-   LifeOS's own palette rather than copying Google's literal colors. */
+   Juno's own palette rather than copying Google's literal colors. */
 .dot-logo{width:20px; height:20px;
   background:
     radial-gradient(circle 5px at 25% 25%, var(--brand-l) 99%, transparent 100%),
@@ -265,7 +264,7 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
 @keyframes rise{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
 .msg.you{align-self:flex-end; color:#fff; border-bottom-right-radius:8px;
   background:var(--gradient-brand)}
-.msg.lifeos{align-self:flex-start; background:var(--card); color:var(--ink);
+.msg.juno{align-self:flex-start; background:var(--card); color:var(--ink);
   border:1px solid var(--line); border-bottom-left-radius:8px}
 .msg.typing{letter-spacing:3px; color:var(--muted); animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.4}}
@@ -274,26 +273,11 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
 .dock{padding:10px 16px calc(20px + env(safe-area-inset-bottom));
   background:linear-gradient(180deg, transparent, var(--bg2) 42%);
   display:flex; flex-direction:column; align-items:center; gap:12px}
-/* Typed composer — a real chat input alongside the mic, not voice-only,
-   so this genuinely is a chat thread you can talk OR type into (same
-   handleCommand()/addMsg() pipeline either way). Sits above the mic pill:
-   voice stays the bigger, primary control per this app's elder-first
-   voice design, typing is the secondary option for anyone who prefers it. */
-.composer{width:100%; max-width:520px; display:flex; align-items:center; gap:8px;
-  background:var(--card); border:1px solid var(--line); border-radius:999px;
-  padding:6px 6px 6px 22px; box-shadow:var(--shadow-sm)}
-.composer input{flex:1; min-width:0; border:none; background:transparent; color:var(--ink);
-  font-size:17px; font-family:inherit; outline:none; padding:12px 0}
-.composer input::placeholder{color:var(--muted)}
-.composer-send{flex:none; width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
-  background:var(--gradient-brand); color:#fff; display:grid; place-items:center;
-  transition:transform .12s}
-.composer-send:active{transform:scale(.88)}
-.composer-send .icon{width:19px; height:19px}
-/* The composer-bar mic — a wide pill (icon well + status text), not a
-   small floating circle, closer to how Gemini's own input bar reads:
-   one wide rounded surface anchoring the bottom of the screen rather
-   than a small button sitting on its own. */
+/* The mic control — a wide pill (icon well + status text), not a small
+   floating circle, echoing Gemini's own gradient/rounded shape language:
+   one wide rounded surface anchoring the bottom of the screen rather than
+   a small button sitting on its own. This is the app's ONLY input — a
+   voice assistant, not a typed-chat/LLM-app interface. */
 .micbtn{position:relative; width:auto; min-width:250px; max-width:100%; border:none; cursor:pointer;
   border-radius:999px; background:var(--gradient-brand); color:#fff;
   box-shadow:0 12px 30px var(--ring); display:flex; align-items:center; gap:14px;

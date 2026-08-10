@@ -1,10 +1,16 @@
 /* ============================================================
-   Saathi — a simple voice helper for elders
-   Pure browser app: no server, no keys. Uses the phone's own
-   speech recognition + text-to-speech (Web Speech API).
+   Juno — a simple voice helper for elders
+   Pure browser app: no server, no keys required. Uses the phone's own
+   speech recognition + text-to-speech (Web Speech API), Gemini optional.
    ============================================================ */
 
 'use strict';
+
+// Single source of truth for the assistant's spoken/displayed name — every
+// other reference in this file reads from here instead of a hardcoded
+// string, so swapping the name later (e.g. back to Elix) is a one-line
+// change, not a find-and-replace across the whole app.
+const ASSISTANT_NAME = 'Juno';
 
 /* ---------- Tiny helpers ---------- */
 const $  = (s, r=document) => r.querySelector(s);
@@ -123,6 +129,8 @@ const KW = {
   medTaken:['taken','took','done','khaya','खा लिया','ले लिया','खाई','हो गया','finished','खा ली','सेवन','tomé','genommen'],
   time:    ['time','kya time','samay','समय','टाइम','बजे','hora','zeit','时间','clock'],
   help:    ['help','madad','मदद','सहायता','bachao','बचाओ','ayuda','hilfe','emergency','救命'],
+  name:    ['your name','what is your name','who are you','tumhara naam','तुम्हारा नाम','आपका नाम',
+            'तुम कौन हो','आप कौन हो','tu naam','tu kaun hai','como te llamas','wie heißt du'],
 };
 const hasKW = (t, list) => list.some(w => t.includes(w));
 
@@ -216,7 +224,7 @@ async function aiUnderstand(raw){
   if(!key) return null;
   const names = state.contacts.map(c=>c.name).join(', ') || '(none saved yet)';
   const sys =
-    "You are LifeOS, a kind voice helper for an elderly person. The user may speak ANY language. "
+    `You are ${ASSISTANT_NAME}, a kind voice helper for an elderly person. The user may speak ANY language. `
     + "Decide ONE action and a spoken reply. Known people you can contact: " + names + ". "
     + "Reply ONLY as a JSON object with keys: action, person, query, message, reply. "
     + "action is one of: call, whatsapp, message, torch_on, torch_off, youtube, time, medicine_taken, answer, none. "
@@ -281,6 +289,13 @@ async function handleCommand(raw){
 function handleCommandLocal(raw){
   const t = normalize(raw);
 
+  // Answered locally, instantly, with no AI/network dependency — an
+  // elder-companion app shouldn't need a cloud round-trip (or fail
+  // silently offline) just to say its own name.
+  if(hasKW(t, KW.name)){
+    speakAndShow(`My name is ${ASSISTANT_NAME}. I am here to help you.`);
+    return;
+  }
   if(hasKW(t, KW.help)){
     speakAndShow(say('help_intro'));
     go('help'); return;
@@ -461,14 +476,14 @@ function addMsg(role, text){
 }
 let typingEl = null;
 function setThinking(on){
-  if(on){ if(!typingEl){ typingEl = addMsg('lifeos typing', '•••'); } }
+  if(on){ if(!typingEl){ typingEl = addMsg('juno typing', '•••'); } }
   else if(typingEl){ typingEl.remove(); typingEl = null; }
   const btn = $('#talkBtn');
   if(btn) btn.classList.toggle('thinking', on);
 }
 function setStatus(t){ const s=$('#talkLabel'); if(s) s.textContent = t; }
 
-function speakAndShow(text){ setThinking(false); addMsg('lifeos', text); Voice.speak(text); }
+function speakAndShow(text){ setThinking(false); addMsg('juno', text); Voice.speak(text); }
 
 function renderMeds(){
   const box = $('#medList'); box.innerHTML='';
@@ -554,7 +569,7 @@ function openForm(title, fields, onSave){
 function fmt12(hm){ const [h,m]=hm.split(':').map(Number); const ap=h<12?'AM':'PM'; return `${(h%12)||12}:${pad(m)} ${ap}`; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function buzz(){ try{ navigator.vibrate && navigator.vibrate([300,150,300]); }catch{} }
-function toast(msg){ addMsg('lifeos', msg); }
+function toast(msg){ addMsg('juno', msg); }
 function notify(title, body){
   if(!('Notification' in window)) return;
   if(Notification.permission==='granted'){ try{ new Notification(title,{body,icon:'icons/icon.svg'});}catch{} }
@@ -565,7 +580,7 @@ function tickClock(){ const el=$('#clock'); if(!el) return; const d=new Date(); 
    WIRING
    ============================================================ */
 /* ============================================================
-   WAKE WORD — always listening for the name "LifeOS"
+   WAKE WORD — always listening for the name "Juno"
    Lightweight on-device recognition; when it hears the name it
    handles whatever was said after it. Hands-free.
    ============================================================ */
@@ -578,7 +593,7 @@ const SUPPORTS_WAKE = !!(window.SpeechRecognition || window.webkitSpeechRecognit
 
 const Wake = {
   rec:null, on:false, paused:false,
-  words:['lifeos','sarathi','saarti','sarthi','साथी','सारथी','साथि','ساتھی'],
+  words:['juno','जूनो','جونو'],
   start(){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR || this.rec) return;
@@ -609,10 +624,17 @@ function resumeWake(){ if(state.settings.wake){ Wake.paused=false; if(!Wake.rec)
 
 /* ---------- Listening flow: cloud recording (tap to start / tap to stop) or browser ---------- */
 let listenBusy = false;
+// The active browser-mode SpeechRecognition instance, if any — without
+// tracking this, a second tap while browser-mode was listening did
+// nothing at all (only 'cloud' mode had a stop handler), so if
+// recognition didn't end on its own promptly the mic looked stuck and
+// the only thing left to try was tapping it repeatedly.
+let activeRec = null;
 async function onTalk(){
   const btn = $('#talkBtn');
   if(btn.classList.contains('listening')){
     if(btn.dataset.mode === 'cloud') await finishCloudListen();   // stop & transcribe
+    else if(btn.dataset.mode === 'browser' && activeRec){ try{ activeRec.abort(); }catch{} }
     return;
   }
   if(listenBusy) return;
@@ -632,41 +654,29 @@ async function finishCloudListen(){
   const text = await transcribeAudio(blob);
   listenBusy = false; setStatus(defaultStatus());
   if(text){ addMsg('you', text); await handleCommand(text); }
-  else { setThinking(false); addMsg('lifeos', "I could not hear that. Let me try another way."); browserListen(); return; }
+  else { setThinking(false); addMsg('juno', "I could not hear that. Let me try another way."); browserListen(); return; }
   resumeWake();
 }
 function browserListen(){
   const btn = $('#talkBtn'); btn.classList.add('listening'); btn.dataset.mode='browser';
   setStatus('Listening…');
-  Voice.listen(
+  activeRec = Voice.listen(
     (best)=>{ if(best){ addMsg('you', best); handleCommand(best); } },
-    ()=>{ btn.classList.remove('listening'); btn.dataset.mode=''; setStatus(defaultStatus()); resumeWake(); }
+    ()=>{ activeRec=null; btn.classList.remove('listening'); btn.dataset.mode=''; setStatus(defaultStatus()); resumeWake(); }
   );
 }
-function defaultStatus(){ return state.settings.wake ? 'Say “LifeOS”, or tap to talk' : 'Tap to talk'; }
+function defaultStatus(){ return state.settings.wake ? `Say "${ASSISTANT_NAME}", or tap to talk` : 'Tap to talk'; }
 
 function wire(){
   // talk button — cloud record→transcribe (Gemini) when a key is set, else browser voice
   $('#talkBtn').onclick = () => onTalk();
-
-  // typed composer — same handleCommand()/addMsg() pipeline as a voice
-  // turn, just skipping the transcription step.
-  $('#composerForm').onsubmit = (e) => {
-    e.preventDefault();
-    const input = $('#composerInput');
-    const text = input.value.trim();
-    if(!text) return;
-    input.value = '';
-    addMsg('you', text);
-    handleCommand(text);
-  };
 
   // quick-action chips
   $$('[data-act]').forEach(c=> c.onclick = ()=>{
     const a=c.dataset.act;
     if(a==='medicines'){ renderMeds(); go('medicines'); }
     else if(a==='call'){ renderContacts(); go('call'); }
-    else if(a==='torch'){ Torch.toggle(); addMsg('lifeos','Here is the torch.'); }
+    else if(a==='torch'){ Torch.toggle(); addMsg('juno','Here is the torch.'); }
     else if(a==='youtube'){ openYouTube(''); }
     else if(a==='help'){ speakAndShow(say('help_intro')); }
     else if(a==='repeat'){ if(lastSpoken) Voice.speak(lastSpoken); }
@@ -714,7 +724,7 @@ function wire(){
   } else {
     wakeToggle.onchange = e=>{
       state.settings.wake = e.target.checked; persist();
-      if(state.settings.wake){ Wake.start(); toast('Hands-free is on. Just say “LifeOS”.'); }
+      if(state.settings.wake){ Wake.start(); toast(`Hands-free is on. Just say "${ASSISTANT_NAME}".`); }
       else Wake.stop();
       setStatus(defaultStatus());
     };
@@ -759,7 +769,7 @@ function start(){
   if(emptySub){
     emptySub.innerHTML = state.settings.aiKey
       ? 'Gemini is on — ask me anything, in any language.'
-      : 'Just say <b>“LifeOS”</b> and ask me anything — or add a free Gemini key in Setup to unlock full understanding.';
+      : `Just say <b>"${ASSISTANT_NAME}"</b> and ask me anything — or add a free Gemini key in Setup to unlock full understanding.`;
   }
   tickClock(); setInterval(tickClock, 15000);
   checkReminders(); setInterval(checkReminders, 20000);

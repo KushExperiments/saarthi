@@ -9,7 +9,7 @@
 // the cache name was bumped by hand — bumping it here once to clear that
 // stale cache, but the strategy change below is what actually fixes it
 // going forward, not the version bump.)
-const CACHE_NAME = 'lifeos-shell-v2';
+const CACHE_NAME = 'juno-shell-v1';
 const SHELL_FILES = [
   './',
   './index.html',

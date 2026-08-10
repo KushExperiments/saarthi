@@ -1,13 +1,13 @@
 {
-  "name": "LifeOS — Your Helper",
-  "short_name": "LifeOS",
+  "name": "Juno — Your Helper",
+  "short_name": "Juno",
   "description": "A simple voice helper for elders — call family, medicine reminders, and more, all by voice.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F3F7F4",
-  "theme_color": "#159A6B",
+  "background_color": "#0a0c0b",
+  "theme_color": "#0a0c0b",
   "icons": [
     {
       "src": "icons/icon.svg",

@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0c0b">
-<title>LifeOS — Your Helper</title>
+<title>Juno — Your Helper</title>
 <link rel="manifest" href="manifest.json">
 <!-- iOS "Add to Home Screen" — without these it opens inside Safari's
      browser chrome instead of full-screen like a real app. Apple's own
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LifeOS">
+<meta name="apple-mobile-web-app-title" content="Juno">
 <link rel="stylesheet" href="css/style.css">
 <!-- Applies the saved (or default) dark/light theme before first paint, so
      there's no flash of the wrong theme on load. Reads localStorage
@@ -28,7 +28,7 @@
 <!-- ============ HOME / ASSISTANT SCREEN ============ -->
 <main id="home" class="screen active">
   <header class="abar">
-    <div class="brand"><span class="dot-logo"></span><span class="brandname">LifeOS</span></div>
+    <div class="brand"><span class="dot-logo"></span><span class="brandname">Juno</span></div>
     <span id="clock"></span>
     <button class="iconbtn" id="setupBtn" title="Setup" aria-label="Setup"><span class="icon icon-settings"></span></button>
   </header>
@@ -37,22 +37,18 @@
     <div class="empty" id="emptyState">
       <div class="bloom"><span class="bloom-halo"></span><span class="bloom-core"></span><span class="sparkle"></span></div>
       <div class="empty-title" id="hello">Hello</div>
-      <div class="empty-sub" id="emptySub">Just say <b>“LifeOS”</b> and ask me anything — in any language</div>
+      <div class="empty-sub" id="emptySub">Just say <b>“Juno”</b> and ask me anything — in any language</div>
     </div>
   </div>
 
   <div class="dock">
-    <form id="composerForm" class="composer" autocomplete="off">
-      <input type="text" id="composerInput" placeholder="Type a message…" aria-label="Type a message">
-      <button type="submit" class="composer-send" aria-label="Send"><span class="icon icon-send"></span></button>
-    </form>
-    <button id="talkBtn" class="micbtn" aria-label="Talk to LifeOS">
+    <button id="talkBtn" class="micbtn" aria-label="Talk to Juno">
       <span class="mic-avatar">
         <span class="ripples"><i></i><i></i><i></i></span>
         <span class="waves"><i></i><i></i><i></i><i></i><i></i></span>
         <span class="micicon icon icon-mic"></span>
       </span>
-      <span class="statusline" id="talkLabel">Say “LifeOS”, or tap to talk</span>
+      <span class="statusline" id="talkLabel">Say “Juno”, or tap to talk</span>
     </button>
   </div>
 </main>
@@ -109,8 +105,8 @@
   </div>
   <div class="setuprow">
     <label><span class="icon icon-mic"></span> Hands-free (call it by name)</label>
-    <label class="switchrow"><input type="checkbox" id="wakeToggle"> Listen for the name “LifeOS”</label>
-    <p class="hint" style="margin:0">When on, just say “LifeOS …” and it answers — no tapping needed.</p>
+    <label class="switchrow"><input type="checkbox" id="wakeToggle"> Listen for the name “Juno”</label>
+    <p class="hint" style="margin:0">When on, just say “Juno …” and it answers — no tapping needed.</p>
   </div>
   <div class="setuprow">
     <label><span class="icon icon-people"></span> For family — set up</label>
