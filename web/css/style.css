@@ -219,15 +219,12 @@ dialog menu{display:flex; gap:10px; justify-content:flex-end; margin:22px 0 0; p
 :root[data-theme="light"] .abar .brandname{color:var(--brand-d)}
 #clock{margin-left:auto; margin-right:6px; font-size:16px; font-weight:700; color:var(--muted);
   background:var(--card); border:1px solid var(--line); padding:7px 13px; border-radius:999px}
-/* Four-dot mark — echoes Google/Gemini's own four-dot brand language
-   ("a reference point for Gemini's rounded, optimistic language") but in
-   Juno's own palette rather than copying Google's literal colors. */
-.dot-logo{width:20px; height:20px;
-  background:
-    radial-gradient(circle 5px at 25% 25%, var(--brand-l) 99%, transparent 100%),
-    radial-gradient(circle 5px at 75% 25%, #4a90d9 99%, transparent 100%),
-    radial-gradient(circle 5px at 25% 75%, #8a7bff 99%, transparent 100%),
-    radial-gradient(circle 5px at 75% 75%, var(--brand-d) 99%, transparent 100%);
+/* App-bar brand mark — the same soundwave icon as icons/icon.svg (the
+   home-screen/PWA icon), so the mark you see inside the app and the one
+   on your phone's home screen are the same logo, not two different
+   marks that happen to share a name. */
+.dot-logo{width:22px; height:22px; border-radius:6px;
+  background:#fff url("../icons/icon.svg") center/cover no-repeat;
   filter:drop-shadow(0 2px 4px var(--ring))}
 .convo{flex:1; overflow-y:auto; padding:14px 16px 6px; display:flex; flex-direction:column; gap:12px}
 

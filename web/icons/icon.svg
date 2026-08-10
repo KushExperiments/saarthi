@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F3F7F4"/>
-      <stop offset="100%" stop-color="#E4EFE8"/>
-    </linearGradient>
-    <linearGradient id="orb" x1="20%" y1="10%" x2="90%" y2="100%">
-      <stop offset="0%" stop-color="#37C98F"/>
-      <stop offset="100%" stop-color="#0E7A53"/>
-    </linearGradient>
-  </defs>
-  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
-  <circle cx="90" cy="90" r="54" fill="url(#orb)"/>
-  <circle cx="72" cy="70" r="18" fill="#ffffff" opacity="0.35"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+  <!-- Hand-built recreation of the "Juno" soundwave mark (design.com) —
+       overlapping wave lobes in blue/cyan/orange on a white rounded
+       square, with a thin navy baseline threading underneath. Not a
+       pixel-exact import (no way to pull the rendered canvas asset from
+       a live design.com editor session), but matches the shapes, colors,
+       and composition closely. -->
+  <rect width="220" height="220" rx="46" fill="#ffffff"/>
+  <path d="M 30,150 C 60,110 70,110 95,140 C 120,170 130,170 155,130 C 175,100 185,100 195,120"
+        fill="none" stroke="#12306b" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <path d="M30,70 C30,42 46,26 60,26 C74,26 90,42 90,70 C90,102 60,150 60,150 C60,150 30,102 30,70 Z" fill="#2f6fed"/>
+  <path d="M67,100 C67,78 79,64 95,64 C111,64 123,78 123,100 C123,124 95,155 95,155 C95,155 67,124 67,100 Z" fill="#2bc6e8"/>
+  <path d="M101,85 C101,58 117,42 130,42 C143,42 159,58 159,85 C159,114 130,153 130,153 C130,153 101,114 101,85 Z" fill="#f5a341"/>
+  <path d="M136,70 C136,42 152,26 165,26 C178,26 194,42 194,70 C194,102 165,140 165,140 C165,140 136,102 136,70 Z" fill="#2f6fed"/>
 </svg>
