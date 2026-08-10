@@ -649,6 +649,18 @@ function wire(){
   // talk button — cloud record→transcribe (Gemini) when a key is set, else browser voice
   $('#talkBtn').onclick = () => onTalk();
 
+  // typed composer — same handleCommand()/addMsg() pipeline as a voice
+  // turn, just skipping the transcription step.
+  $('#composerForm').onsubmit = (e) => {
+    e.preventDefault();
+    const input = $('#composerInput');
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    addMsg('you', text);
+    handleCommand(text);
+  };
+
   // quick-action chips
   $$('[data-act]').forEach(c=> c.onclick = ()=>{
     const a=c.dataset.act;
@@ -729,7 +741,7 @@ function applyTheme(){
   if(t==='dark' || t==='light') document.documentElement.dataset.theme = t;
   else delete document.documentElement.dataset.theme;
   const tc = document.querySelector('meta[name=theme-color]');
-  if(tc) tc.setAttribute('content', t==='dark' ? '#0d1613' : '#159a6b');
+  if(tc) tc.setAttribute('content', t==='dark' ? '#0a0c0b' : '#159a6b');
 }
 
 /* ============================================================
@@ -740,6 +752,15 @@ function start(){
   wire();
   $('#hello').textContent = state.settings.name ? `Hello, ${state.settings.name}` : 'Hello';
   setStatus(defaultStatus());
+  // Gemini is the headline capability, not a hidden setting — say so up
+  // front on the very first thing anyone sees, and point at how to turn
+  // it on if it isn't yet.
+  const emptySub = $('#emptySub');
+  if(emptySub){
+    emptySub.innerHTML = state.settings.aiKey
+      ? 'Gemini is on — ask me anything, in any language.'
+      : 'Just say <b>“LifeOS”</b> and ask me anything — or add a free Gemini key in Setup to unlock full understanding.';
+  }
   tickClock(); setInterval(tickClock, 15000);
   checkReminders(); setInterval(checkReminders, 20000);
 
