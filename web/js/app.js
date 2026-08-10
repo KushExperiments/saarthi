@@ -641,6 +641,21 @@ const Wake = {
 function pauseWake(){ if(Wake.on){ Wake.paused=true; try{Wake.rec && Wake.rec.stop();}catch{} } }
 function resumeWake(){ if(state.settings.wake){ Wake.paused=false; if(!Wake.rec) Wake.start(); else { try{Wake.rec.start();}catch{} } } }
 
+/* Browsers suspend/kill background-tab speech recognition (see the
+   comment on Wake above) — when that happens, Wake.rec's own onend
+   handler tries to restart it, but that restart itself fails silently if
+   the tab is still backgrounded, leaving Wake.on=true while nothing is
+   actually listening. Without this, hands-free would look "on" in Setup
+   but stay dead until the toggle was manually flipped off and back on.
+   Forcing a clean stop+start on every return to the foreground tab means
+   it reliably comes back to life instead of requiring that manual reset. */
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && state.settings.wake && !Wake.paused){
+    Wake.stop();
+    Wake.start();
+  }
+});
+
 /* ---------- Listening flow: cloud recording (tap to start / tap to stop) or browser ---------- */
 let listenBusy = false;
 // The active browser-mode SpeechRecognition instance, if any — without

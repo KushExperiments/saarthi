@@ -36,8 +36,13 @@ is locked.
 
 There is also a lightweight **web version** in [`web/`](web/) (works in any phone
 browser, including **iPhone/Safari** — this is LifeOS's iOS story today, since there's
-no native iOS app) — but the web version **cannot** do background reminders or direct
-calls. For the real thing, use the Android app.
+no native iOS app) — but the web version **cannot** do background reminders, direct
+calls, or hands-free "say the name" listening once the tab is minimized, the phone is
+locked, or another app is in front. Browsers deliberately suspend microphone access
+outside the active tab (a website silently listening while backgrounded would be a
+real privacy problem), so hands-free only works while the page is the visible,
+foreground thing on screen — this is a platform limit, not a bug. For the real thing
+— background reminders, always-on hands-free — use the Android app.
 
 **On iPhone:** open the page in Safari, then *Share → Add to Home Screen* so it opens
 full-screen like a real app. Voice **listening** needs a free Gemini key pasted into
