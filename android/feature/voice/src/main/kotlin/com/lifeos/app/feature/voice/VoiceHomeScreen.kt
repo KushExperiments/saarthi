@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -120,6 +121,17 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
                     )
                 }
             }
+        }
+
+        // Settings was previously only reachable by voice ("open settings")
+        // — no visible way to find it at all, which is a real gap for
+        // anyone poking around the app for the first time rather than
+        // already knowing the magic phrase.
+        TextButton(
+            onClick = { navController.navigate(SettingsRoute.route) },
+            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+        ) {
+            Text(text = "Settings", style = MaterialTheme.typography.labelLarge)
         }
     }
 

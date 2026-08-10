@@ -86,12 +86,25 @@ fun ConversationOverlay(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(conversation) { turn -> ConversationBubble(turn) }
+                // On the very first tap, conversation is empty and the panel
+                // used to just be the orb sitting in an otherwise-blank dark
+                // box — easy to mistake for broken rather than "waiting for
+                // you to say something."
+                if (conversation.isEmpty()) {
+                    Text(
+                        text = if (listening) "Listening…" else "Tap the circle and talk to me",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(conversation) { turn -> ConversationBubble(turn) }
+                    }
                 }
             }
         }
