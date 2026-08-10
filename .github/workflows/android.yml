@@ -37,6 +37,22 @@ jobs:
           gradle-version: '8.9'
           build-root-directory: android
 
+      # Neither Gradle project has an explicit signing config, so both
+      # fall back to Android Gradle Plugin's auto-generated debug
+      # keystore — which, with no cache, gets freshly (and randomly)
+      # regenerated on every single CI run since GitHub-hosted runners
+      # are ephemeral. That means each build was signed with a different
+      # certificate than the last, so installing a new APK over a
+      # previous one failed as a signature mismatch — what Android
+      # surfaces to the user as a blocked "for your security" install.
+      # Caching this file means every future build reuses the same
+      # debug cert, so installs upgrade cleanly instead of conflicting.
+      - name: Cache stable debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
       - name: Build debug APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 

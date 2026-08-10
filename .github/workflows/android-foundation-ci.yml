@@ -33,6 +33,16 @@ jobs:
           gradle-version: '8.9'
           build-root-directory: android
 
+      # Same stable-signing fix as android.yml — without this, every CI
+      # run signs with a freshly random debug cert (ephemeral runner, no
+      # cached keystore), so a new APK install fails as a signature
+      # mismatch against whatever was installed from a previous run.
+      - name: Cache stable debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
       - name: ktlint (report only — see android/README.md)
         run: gradle ktlintCheck --continue || true
 
