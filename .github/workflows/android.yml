@@ -1,5 +1,15 @@
 name: Build LifeOS APK
 
+# This workflow originally ran at the repo root, which builds app/ — the
+# LEGACY pre-modularization prototype — not android/, the active modular
+# rewrite where all current work actually happens. It was silently
+# producing an APK of the wrong, years-stale codebase under this
+# friendly, easy-to-find name, while the correct build lived under the
+# less obvious "Android Foundation CI (M-001)" workflow's
+# lifeos-foundation-debug artifact instead. Retargeted at android/ so the
+# obviously-named artifact people actually go looking for is the current
+# one.
+
 on:
   push:
     branches: [ main, master ]
@@ -8,6 +18,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
     steps:
       - name: Get the code
         uses: actions/checkout@v4
@@ -22,12 +35,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+          build-root-directory: android
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: LifeOS-app
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
