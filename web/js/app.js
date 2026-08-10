@@ -28,7 +28,11 @@ const DB = {
 let state = {
   medicines : DB.load('medicines', []),   // {id,name,times:[],taken:{date,doneTimes:[]}}
   contacts  : DB.load('contacts',  []),    // {id,name,phone}
-  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', aiKey:'', wake:false, theme:'dark' }),
+  // wake:true by default — the welcome screen promises "just say Juno"
+  // from the moment you open the app, so hands-free shouldn't require a
+  // trip to Setup first to actually work. (SUPPORTS_WAKE still forces
+  // this off on browsers without SpeechRecognition, e.g. iOS Safari.)
+  settings  : DB.load('settings', { lang:'en-US', rate:0.85, name:'', aiKey:'', wake:true, theme:'dark' }),
 };
 // Pick up an optional key from a git-ignored config.js (window.LIFEOS_KEY)
 if(!state.settings.aiKey && window.LIFEOS_KEY) state.settings.aiKey = window.LIFEOS_KEY;
@@ -779,12 +783,18 @@ function start(){
   setStatus(defaultStatus());
   // Gemini is the headline capability, not a hidden setting — say so up
   // front on the very first thing anyone sees, and point at how to turn
-  // it on if it isn't yet.
+  // it on if it isn't yet. Also honest about the one-tap requirement:
+  // browsers won't grant mic/audio access without a user gesture first,
+  // so "just say Juno" literally cannot work before that first tap —
+  // promising otherwise just reads as broken when nothing happens.
   const emptySub = $('#emptySub');
   if(emptySub){
+    const wakePart = SUPPORTS_WAKE
+      ? `Tap once, then just say <b>"${ASSISTANT_NAME}"</b> and ask me anything`
+      : `Tap the microphone and ask me anything`;
     emptySub.innerHTML = state.settings.aiKey
-      ? 'Gemini is on — ask me anything, in any language.'
-      : `Just say <b>"${ASSISTANT_NAME}"</b> and ask me anything — or add a free Gemini key in Setup to unlock full understanding.`;
+      ? `${wakePart} — Gemini is on, in any language.`
+      : `${wakePart} — or add a free Gemini key in Setup to unlock full understanding.`;
   }
   tickClock(); setInterval(tickClock, 15000);
   checkReminders(); setInterval(checkReminders, 20000);
@@ -797,7 +807,15 @@ function start(){
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
   // greet + start hands-free on first tap (browsers need a user gesture for audio/mic)
-  const greetOnce = ()=>{
+  const greetOnce = (e)=>{
+    // If the first tap was the mic button itself, onTalk() is already
+    // starting a manual listen right now — speaking the greeting here
+    // would play through the speaker while that mic is live (Juno
+    // hearing its own voice), and starting Wake at the same moment means
+    // two things trying to use the mic at once. That flow's own
+    // resumeWake() already re-enables hands-free once the manual listen
+    // finishes, so just skip both here instead of colliding with it.
+    if(e.target.closest('#talkBtn')){ document.removeEventListener('click', greetOnce); return; }
     Voice.speak(say('greet'));
     if(state.settings.wake) Wake.start();
     document.removeEventListener('click', greetOnce);
