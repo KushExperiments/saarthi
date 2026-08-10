@@ -155,8 +155,16 @@ const GEMINI_MODEL = 'gemini-2.0-flash';
 const Rec = {
   mr:null, chunks:[], stream:null,
   supported(){ return !!(navigator.mediaDevices && window.MediaRecorder); },
+  /* Requests the mic once and keeps the stream alive across every
+     tap-to-talk cycle for the rest of the session, instead of calling
+     getUserMedia() fresh every single time. Many mobile browsers offer a
+     one-time "Allow this time only" grant (rather than "Allow while
+     visiting") as the default option — with a fresh getUserMedia() call
+     per tap, that one-time grant means the permission prompt reappears on
+     every single tap. Reusing one stream means the prompt shows at most
+     once per visit no matter which grant type was chosen. */
   async start(){
-    this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    if(!this.stream){ this.stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
     this.chunks = [];
     const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
     this.mr = mime ? new MediaRecorder(this.stream,{mimeType:mime}) : new MediaRecorder(this.stream);
@@ -168,14 +176,21 @@ const Rec = {
       if(!this.mr){ res(null); return; }
       this.mr.onstop = ()=>{
         const blob = new Blob(this.chunks, {type:this.mr.mimeType||'audio/webm'});
-        this.stream.getTracks().forEach(t=>t.stop());
+        // Deliberately NOT stopping this.stream's tracks here — see the
+        // comment on start(). The mic stays warm (but not recording,
+        // since MediaRecorder itself is stopped) until releaseStream()
+        // is called, which only happens on page unload.
         this.mr = null;
         res(blob);
       };
       try{ this.mr.stop(); }catch{ res(null); }
     });
-  }
+  },
+  releaseStream(){
+    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+  },
 };
+window.addEventListener('pagehide', () => Rec.releaseStream());
 
 /* iOS Safari's MediaRecorder doesn't support audio/webm at all — it records
    audio/mp4 (or similar) instead. Gemini's inline-audio input keys off the
