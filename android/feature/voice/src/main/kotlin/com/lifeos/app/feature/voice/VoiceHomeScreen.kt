@@ -48,7 +48,7 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.say("Hello. I am LifeOS. Tap the circle and talk to me.")
+        viewModel.say("Hello. I am Juno. Tap the circle and talk to me.")
     }
 
     LaunchedEffect(effect) {

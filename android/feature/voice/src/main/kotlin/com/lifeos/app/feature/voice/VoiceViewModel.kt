@@ -13,6 +13,7 @@ import com.lifeos.app.core.interaction.DialogueManager
 import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.NamedEntity
 import com.lifeos.app.core.interaction.VoiceEngine
+import com.lifeos.app.core.interaction.WakeSignal
 import com.lifeos.app.feature.contacts.Contact
 import com.lifeos.app.feature.contacts.ContactRepository
 import com.lifeos.app.feature.medicines.MedicineRepository
@@ -37,6 +38,7 @@ sealed interface VoiceUiEffect {
 data class ConversationTurn(val fromUser: Boolean, val text: String)
 
 private const val MAX_HISTORY_TURNS = 6
+private const val WAKE_SIGNAL_FRESHNESS_MS = 5_000L
 
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
@@ -46,6 +48,7 @@ class VoiceViewModel @Inject constructor(
     private val dialogueManager: DialogueManager,
     private val stateMachine: ConversationStateMachine,
     private val dispatchers: DispatcherProvider,
+    private val wakeSignal: WakeSignal,
 ) : ViewModel() {
 
     private val _listening = MutableStateFlow(false)
@@ -67,6 +70,29 @@ class VoiceViewModel @Inject constructor(
 
     private val contacts: StateFlow<List<Contact>> = contactRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        // WakeWordService fires this when it hears "Juno" in the background,
+        // then makes a best-effort attempt to bring the app to the
+        // foreground (see WakeWordService's doc comment on why that's not
+        // guaranteed). This ViewModel might not have existed yet at the
+        // moment of that fire() — created only once the Activity actually
+        // launches — so a plain "ignore the replayed initial value" approach
+        // would miss exactly the case this exists for. Instead: act on the
+        // signal only if it's recent, which correctly covers both "already
+        // on screen when wake fires" and "just launched because of it,"
+        // while ignoring a stale value from long before this ViewModel
+        // existed. Placed after every property above so this coroutine
+        // (even if it somehow ran synchronously) never touches a
+        // not-yet-initialized property.
+        viewModelScope.launch {
+            wakeSignal.triggered.collect { firedAt ->
+                if (firedAt != 0L && System.currentTimeMillis() - firedAt < WAKE_SIGNAL_FRESHNESS_MS) {
+                    startListening()
+                }
+            }
+        }
+    }
 
     fun consumeEffect() {
         _effect.value = null

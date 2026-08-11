@@ -38,7 +38,14 @@ class EncryptedAiApiKeyStore @Inject constructor(
         )
     }
 
-    override fun getApiKey(): String? = prefs.getString(KEY_API_KEY, null)
+    // Falls back to the build-time baked-in key (see core/ai/build.gradle.kts)
+    // when nothing's been explicitly stored — end users never see a key-entry
+    // screen, so a user-entered value should never actually exist in
+    // practice, but this keeps the interface honest: an explicitly stored
+    // key (if one is ever set some other way) still wins over the baked-in
+    // default rather than being silently ignored.
+    override fun getApiKey(): String? =
+        prefs.getString(KEY_API_KEY, null) ?: BuildConfig.GEMINI_API_KEY.ifBlank { null }
 
     override fun setApiKey(key: String) {
         prefs.edit().putString(KEY_API_KEY, key).apply()

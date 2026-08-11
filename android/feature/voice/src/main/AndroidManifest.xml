@@ -1,9 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- WakeWordService requires all three: FOREGROUND_SERVICE is the base
+         permission every foreground service needs; FOREGROUND_SERVICE_MICROPHONE
+         is the typed permission Android 14+ (API 34) requires for a
+         microphone-type foreground service specifically — omitting it makes
+         startForeground() throw at runtime on API 34+; POST_NOTIFICATIONS is
+         the Android 13+ (API 33) runtime permission the persistent
+         "Juno is listening" notification needs to actually be visible
+         (the service still runs without it, but silently with no
+         notification, which defeats the "always shows a notification while
+         active" transparency this is supposed to have). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
+    <application>
+        <service
+            android:name=".WakeWordService"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
+    </application>
 </manifest>

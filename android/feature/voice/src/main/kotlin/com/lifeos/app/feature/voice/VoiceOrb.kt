@@ -123,7 +123,7 @@ fun VoiceOrb(
                 .rotate(rotation)
                 .clip(CircleShape)
                 .clickable(
-                    onClickLabel = if (listening) "Stop listening" else "Tap and talk to LifeOS",
+                    onClickLabel = if (listening) "Stop listening" else "Tap and talk to Juno",
                     role = Role.Button,
                     onClick = onClick,
                 ),

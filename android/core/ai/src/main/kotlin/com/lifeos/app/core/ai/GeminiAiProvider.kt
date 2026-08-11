@@ -158,7 +158,7 @@ class GeminiAiProvider @Inject constructor(
         url + (if (url.contains("?")) "&" else "?") + "key=" + key
 
     private fun systemPrompt(request: UnderstandRequest): String = buildString {
-        append("You are LifeOS, a kind voice helper for an elderly person. ")
+        append("You are Juno, a kind voice helper for an elderly person. ")
         append("Read what the user said (it may be in any language) and decide ONE action. ")
         append("Known people you can contact: ")
         append(if (request.knownPeople.isEmpty()) "(none saved yet). " else request.knownPeople.joinToString(", ") + ". ")

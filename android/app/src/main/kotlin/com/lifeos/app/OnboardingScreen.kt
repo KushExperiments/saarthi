@@ -64,7 +64,7 @@ fun OnboardingScreen(onDone: () -> Unit, viewModel: OnboardingViewModel = hiltVi
         Text(text = "Hello 👋", style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "I'm LifeOS. I can remind you about medicines, help you call " +
+            text = "I'm Juno. I can remind you about medicines, help you call " +
                 "family, and more — all with your voice.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

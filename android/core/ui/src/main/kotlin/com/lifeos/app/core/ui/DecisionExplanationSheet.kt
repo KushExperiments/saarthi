@@ -27,7 +27,7 @@ data class DecisionExplanation(
     val alternatives: List<String>,
 )
 
-/** "Why did LifeOS do that?" — Cognitive OS's Decision Traceability made legible, not just logged. */
+/** "Why did Juno do that?" — Cognitive OS's Decision Traceability made legible, not just logged. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DecisionExplanationSheet(

@@ -13,6 +13,19 @@ android {
 
     defaultConfig {
         minSdk = 26
+
+        // Baked-in Gemini key: end users never see a key-entry screen, so
+        // the key has to come from somewhere at build time instead. Reads
+        // a Gradle property (CI passes -PGEMINI_API_KEY=... sourced from a
+        // GitHub Actions secret — never the raw value committed anywhere)
+        // and falls back to an empty string so a local/dev build without
+        // that property still compiles fine, just without AI features
+        // (same graceful "no key" degradation this app already has
+        // everywhere else).
+        val geminiApiKey = (project.findProperty("GEMINI_API_KEY") as String?)
+            ?: System.getenv("GEMINI_API_KEY")
+            ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     compileOptions {
@@ -20,6 +33,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    buildFeatures { buildConfig = true }
 }
 
 dependencies {

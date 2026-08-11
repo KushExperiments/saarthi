@@ -9,6 +9,6 @@ class PlaceholderViewModelTest {
     fun `message comes from the injected GreetingProvider`() {
         val viewModel = PlaceholderViewModel(GreetingProvider())
 
-        assertEquals("LifeOS's foundation is running.", viewModel.message)
+        assertEquals("Juno's foundation is running.", viewModel.message)
     }
 }

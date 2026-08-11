@@ -7,6 +7,7 @@ import com.lifeos.app.core.interaction.ConversationStateMachine
 import com.lifeos.app.core.interaction.DialogueManager
 import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.VoiceEngine
+import com.lifeos.app.core.interaction.WakeSignal
 import com.lifeos.app.core.testing.MainDispatcherRule
 import com.lifeos.app.core.testing.TestDispatcherProvider
 import com.lifeos.app.feature.contacts.Contact
@@ -39,6 +40,7 @@ class VoiceViewModelTest {
         dialogueManager,
         ConversationStateMachine(),
         TestDispatcherProvider(),
+        WakeSignal(),
     )
 
     @Test

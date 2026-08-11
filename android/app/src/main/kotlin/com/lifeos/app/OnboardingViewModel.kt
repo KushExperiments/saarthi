@@ -19,7 +19,7 @@ class OnboardingViewModel @Inject constructor(
 ) : ViewModel() {
     fun greet() {
         voiceEngine.speak(
-            "Hello. I'm LifeOS, your voice companion. " +
+            "Hello. I'm Juno, your voice companion. " +
                 "I can remind you about medicines, help you call family, and more, all with your voice. " +
                 "Let's get started.",
         )

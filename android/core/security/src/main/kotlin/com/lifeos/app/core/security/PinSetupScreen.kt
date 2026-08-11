@@ -35,7 +35,7 @@ fun PinSetupScreen(viewModel: AuthViewModel = hiltViewModel()) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val isConfirmStage = firstPin != null
-    val title = if (isConfirmStage) "Type it again to confirm" else "Choose a PIN to lock LifeOS"
+    val title = if (isConfirmStage) "Type it again to confirm" else "Choose a PIN to lock Juno"
 
     fun onDigit(digit: String) {
         if (currentInput.length >= PIN_LENGTH) return

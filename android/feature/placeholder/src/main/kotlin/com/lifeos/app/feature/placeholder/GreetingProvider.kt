@@ -9,5 +9,5 @@ import javax.inject.Inject
  * injected repositories/use-cases.
  */
 class GreetingProvider @Inject constructor() {
-    fun greet(): String = "LifeOS's foundation is running."
+    fun greet(): String = "Juno's foundation is running."
 }
