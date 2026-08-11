@@ -1,1 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Without this, every Gemini API call (understand/transcribe/verifyKey)
+         fails at the socket level — no exception surfaces to the user,
+         GeminiAiProvider's try/catch swallows it into Outcome.Failure, and
+         LlmCandidateGenerator quietly contributes zero candidates. This is
+         why a plain "hello" (or any AI-dependent request) always fell
+         through to "Sorry, I didn't understand": the AI path was never
+         actually reachable on a real device, only in JVM unit tests against
+         a MockWebServer (which doesn't go through the real Android
+         permission model at all, so this gap was invisible to CI). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

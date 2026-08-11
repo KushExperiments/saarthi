@@ -19,11 +19,32 @@ class RuleBasedCandidateGenerator @Inject constructor() : CandidateGenerator {
     private val medicinesWords = listOf("medicine", "medicines", "pill", "dawai", "दवा", "दवाई", "गोली")
     private val settingsWords = listOf("settings", "setting", "सेटिंग", "सेटिंग्स")
     private val helpWords = listOf("help", "emergency", "मदद")
+    // Safe to match as bare substrings — unlike a short word like "hi",
+    // these aren't likely to appear accidentally inside other words. This
+    // is a resilience fallback, not the primary path: a plain greeting
+    // should normally be answered by the LLM candidate (the system prompt
+    // treats "wants to chat" as action "answer"), but if that call ever
+    // fails for any reason (bad key, transient network issue), the
+    // deterministic floor tier still means "hello" gets a warm reply
+    // instead of "Sorry, I didn't understand."
+    private val greetingWords = listOf("hello", "namaste", "नमस्ते", "हैलो")
 
     override suspend fun generate(input: DecisionInput): List<Candidate> {
         val text = normalize(input.transcript)
 
         if (has(text, helpWords)) return listOf(rule("help", confidence = 0.9f))
+        if (has(text, greetingWords)) {
+            return listOf(
+                rule(
+                    "answer",
+                    confidence = 0.6f,
+                    params = mapOf(
+                        "reply" to "Hello! I'm here to help. You can ask me to call someone, " +
+                            "or tell me when you've taken your medicine.",
+                    ),
+                ),
+            )
+        }
         if (has(text, medicineTakenWords)) return listOf(rule("medicine_taken", confidence = 0.9f))
         if (has(text, medicinesWords)) return listOf(rule("open_medicines", confidence = 0.85f))
         if (has(text, settingsWords)) return listOf(rule("open_settings", confidence = 0.85f))
