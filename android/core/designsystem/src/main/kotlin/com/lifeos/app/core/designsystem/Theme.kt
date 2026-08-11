@@ -1,6 +1,5 @@
 package com.lifeos.app.core.designsystem
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -31,10 +30,15 @@ private val DarkColors = darkColorScheme(
 /**
  * LifeOS's single design-system entry point. Every screen in every
  * feature module wraps its content in this — there is no second theme.
+ *
+ * Defaults to dark rather than following the system setting — matches the
+ * web app's identity (dark near-black, Gemini-style, decided explicitly
+ * after feedback that a light default didn't match), and this was one of
+ * the concrete "doesn't match what I expected" gaps between the two apps.
  */
 @Composable
 fun LifeOSTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colors = if (darkTheme) DarkColors else LightColors

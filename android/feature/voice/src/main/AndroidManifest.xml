@@ -14,6 +14,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Lets Settings prompt the user to whitelist Juno from battery
+         optimization when enabling hands-free. Without this, many OEM
+         battery managers (Xiaomi/Oppo/Vivo/Samsung — already called out in
+         android/README.md's setup notes for medicine reminders) kill a
+         background service within minutes regardless of FOREGROUND_SERVICE
+         being correctly declared; this is the actual fix for that, not
+         something more code alone can work around. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />

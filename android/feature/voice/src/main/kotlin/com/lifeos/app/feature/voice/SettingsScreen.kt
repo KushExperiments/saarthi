@@ -33,6 +33,7 @@ fun SettingsScreen(decisionExplanationViewModel: DecisionExplanationViewModel = 
     var alwaysListening by remember { mutableStateOf(VoiceSettingsPrefs.isAlwaysListeningEnabled(context)) }
     val micPermission = rememberMicrophonePermissionState()
     val notificationPermission = rememberNotificationPermissionState()
+    val batteryOptimization = rememberBatteryOptimizationState()
     var pendingEnable by remember { mutableStateOf(false) }
 
     // Finishes turning hands-free on once every permission it needs is
@@ -42,6 +43,12 @@ fun SettingsScreen(decisionExplanationViewModel: DecisionExplanationViewModel = 
     // watched for the grant to actually complete the enable. This chains
     // through mic -> notifications -> starting the real service, re-running
     // whenever a permission's granted state changes.
+    //
+    // Battery optimization is requested but NOT gated on — declining it
+    // doesn't block hands-free from turning on, it just means the service
+    // is more likely to get killed in the background on aggressive OEM
+    // skins (Xiaomi/Oppo/Vivo/Samsung), same tradeoff this app's medicine
+    // reminders already document in android/README.md.
     LaunchedEffect(pendingEnable, micPermission.granted, notificationPermission.granted) {
         if (!pendingEnable) return@LaunchedEffect
         when {
@@ -51,6 +58,7 @@ fun SettingsScreen(decisionExplanationViewModel: DecisionExplanationViewModel = 
                 pendingEnable = false
                 alwaysListening = true
                 VoiceSettingsPrefs.setAlwaysListeningEnabled(context, true)
+                if (!batteryOptimization.ignoring) requestIgnoreBatteryOptimizations(context, batteryOptimization)
                 WakeWordService.start(context)
             }
         }

@@ -1,5 +1,9 @@
 <resources>
     <!-- Pure-Compose app: a minimal platform theme with no action bar.
-         All real theming (color/type/shape) lives in LifeOSTheme (Compose). -->
-    <style name="Theme.LifeOS" parent="android:Theme.Material.Light.NoActionBar" />
+         All real theming (color/type/shape) lives in LifeOSTheme (Compose).
+         Dark parent, not Light — LifeOSTheme now defaults to dark, and a
+         Light platform theme here would flash a white window background
+         for a moment before Compose actually paints, the exact FOUC issue
+         already fixed on the web app's pre-paint theme script. -->
+    <style name="Theme.LifeOS" parent="android:Theme.Material.NoActionBar" />
 </resources>
