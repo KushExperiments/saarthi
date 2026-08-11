@@ -29,9 +29,10 @@ import com.lifeos.app.core.ui.LifeOSButton
 import com.lifeos.app.feature.voice.VoiceOrb
 
 /**
- * The very first thing anyone sees, before the PIN lock exists — a warm,
- * spoken introduction rather than a silent splash screen. Shown exactly
- * once (see [OnboardingPrefs]); everything after this sits behind AuthGate.
+ * The very first thing anyone sees — a warm, spoken introduction rather
+ * than a silent splash screen. Shown exactly once (see [OnboardingPrefs]);
+ * after this the app goes straight to the voice home screen (no PIN lock —
+ * see MainActivity's comment on why that was removed).
  */
 @Composable
 fun OnboardingScreen(onDone: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {

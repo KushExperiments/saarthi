@@ -18,7 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.lifeos.app.core.designsystem.LifeOSTheme
 import com.lifeos.app.core.navigation.FeatureNavigation
-import com.lifeos.app.core.security.AuthGate
+import com.lifeos.app.feature.voice.HandsFreePromptPrefs
+import com.lifeos.app.feature.voice.HandsFreePromptScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val context = LocalContext.current
                     var onboardingSeen by remember { mutableStateOf(OnboardingPrefs.hasSeenOnboarding(context)) }
+                    var handsFreePromptSeen by remember { mutableStateOf(HandsFreePromptPrefs.hasSeenPrompt(context)) }
 
                     if (!onboardingSeen) {
                         OnboardingScreen(
@@ -47,12 +49,27 @@ class MainActivity : ComponentActivity() {
                                 onboardingSeen = true
                             },
                         )
+                    } else if (!handsFreePromptSeen) {
+                        // A one-time, deliberate yes/no screen for a real
+                        // capability (a persistent background microphone) —
+                        // not a switch buried in a Settings menu nobody
+                        // would find without being told to look for it.
+                        HandsFreePromptScreen(onDone = { handsFreePromptSeen = true })
                     } else {
-                        // Nothing behind the lock (no feature screen, no data)
-                        // is ever composed until AuthGate reaches Unlocked.
-                        AuthGate {
-                            LifeOSNavHost(featureNavigations)
-                        }
+                        // PIN lock removed: it was gating the entire app
+                        // behind a first-run PIN-setup screen backed by a
+                        // legacy androidx.security Keystore API
+                        // (EncryptedPrefsAuthRepository) that this codebase
+                        // never had a way to verify actually works on a real
+                        // device (no emulator/device available while
+                        // building it — see its own doc comment). That's
+                        // the most likely reason the app stopped opening at
+                        // all: a crash during Hilt's dependency
+                        // construction, before any UI renders, would look
+                        // exactly like "doesn't open." An elder-facing app
+                        // also shouldn't need a PIN to talk to Juno in the
+                        // first place — removed rather than patched blind.
+                        LifeOSNavHost(featureNavigations)
                     }
                 }
             }
