@@ -26,7 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifeos.app.core.designsystem.LifeOSMotion
 import com.lifeos.app.core.ui.LifeOSButton
-import com.lifeos.app.feature.voice.VoiceOrb
+import com.lifeos.app.feature.voice.JunoPresence
+import com.lifeos.app.feature.voice.PresenceState
 
 /**
  * The very first thing anyone sees — a warm, spoken introduction rather
@@ -59,7 +60,7 @@ fun OnboardingScreen(onDone: () -> Unit, viewModel: OnboardingViewModel = hiltVi
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        VoiceOrb(listening = false, onClick = { viewModel.greet() })
+        JunoPresence(state = PresenceState.IDLE, onClick = { viewModel.greet() })
 
         Spacer(modifier = Modifier.height(40.dp))
         Text(text = "Hello 👋", style = MaterialTheme.typography.headlineLarge)

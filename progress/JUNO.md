@@ -113,3 +113,70 @@ reacting to.
 ### Still open / not done
 - **Real email sign-in/sign-up with verification** was requested (replacing the removed PIN lock), with persistent login so the app doesn't ask every time. Not built yet — needs an actual identity/auth backend (e.g., Firebase Authentication), which requires the user to create that project and hand over config; also arguably in tension with "elders shouldn't have to click through anything, Juno should do it." Needs a scoping conversation, not a blind build, especially this close to the deadline.
 - No local Java/Gradle/Android toolchain or emulator has been available in this environment at any point — every Android change has been verified only by GitHub Actions CI (compiles + passes unit tests), never by actually running the app. Several real bugs (the missing INTERNET permission, the fake Settings toggle, the unstable signing cert) were things CI could never have caught, since they only manifest on a real device.
+
+## 2026-08-12 — M-001 "Juno Core Experience": the redesign becomes real code
+
+First implementation milestone in the multi-phase product build the user kicked off after approving
+the visual redesign spec. **Important correction made at the start of this work:** the approved
+orb/design-system direction existed only as a standalone HTML design artifact — `git status` showed
+zero app code had changed. Everything below is the first time any of it landed in `android/`.
+
+**Design system** (`core/designsystem`): `Color.kt` replaced the green + cool blue-violet palette
+with the approved ember (presence/action) + verdigris (memory/trust) hues on warm umber/ivory
+neutrals. `Type.kt` gives Juno's "speaking voice" (greetings, anything Juno says) a serif family,
+everything else stays sans. `Motion.kt` retimed for the new Presence states. **Known simplification,
+by necessity, not oversight:** the serif uses `FontFamily.Serif` (a system font) rather than the
+approved spec's specific Fraunces family — bundling a real font resource is unverifiable without a
+device; see `docs/adr/0001`.
+
+**`JunoPresence`** (`feature/voice/JunoPresence.kt`) replaces `VoiceOrb.kt` entirely — 10 states
+(Idle, Listening, WakeWord, Thinking, Speaking, ProcessingAction, Success, Error, Offline,
+Emergency), each with its own palette and motion, lit by one **fixed** virtual light that never
+rotates (see `docs/adr/0001` for the full reasoning — a smooth sphere lit from a fixed direction
+looks identical at every rotation angle, so the old rotating-gradient orb was never actually
+simulating anything physical). Rendered with layered `drawCircle`/`Brush.radialGradient` calls only
+— a deliberately lower-risk technique than the per-pixel baked-bitmap approach verified in the design
+artifact, chosen specifically because there's no local build/emulator here to catch a
+`Bitmap`/`BlendMode` mistake before it ships.
+
+**Real signals, not guesses, behind every state:** `VoiceEngine` gained a `speaking: StateFlow<Boolean>`
+from a new `TextToSpeech.UtteranceProgressListener`. A new `NetworkStatusMonitor`
+(`ConnectivityManager` callback, `ACCESS_NETWORK_STATE` added to the manifest) backs the Offline
+state — it only ever overrides an otherwise-idle Presence, never interrupting a live turn. Wake-word/
+success/error are brief transient flashes fired from `VoiceViewModel` at the real moments they occur
+(wake heard, a call/WhatsApp/medicine-confirm succeeds, a command isn't understood). All of this is
+combined by a new pure, fully unit-tested `PresenceStateMapper`.
+
+**The memory system got its first real reader.** `VoiceHomeScreen`'s greeting now calls
+`KnowledgeGraph.findByLabel("preferred name")` — the exact label `OnboardingViewModel.rememberName()`
+already wrote — making it the first production code anywhere in the app that reads memory back after
+writing it (the 2026-08-12 audit's #3 finding, fixed as a side effect of building the greeting, not a
+separate cleanup pass). A contextual "next due" line appears on Home only when a medicine is actually
+unconfirmed today, absent entirely otherwise — matches the approved spec's "presence alone is the
+default" principle. `feature:voice` gained a new dependency on `core:memory` to make this possible.
+
+**Conversation view rebuilt** (`ConversationOverlay.kt`) — replaced the left/right chat-bubble UI
+(the literal thing the original complaint named: "a chatbot attached to a voice button") with a
+spatial transcript: Juno's words in the serif voice, the user's words as a smaller muted record
+underneath.
+
+**Caught mid-implementation, before it shipped:** this project's own `android/README.md` already
+documents a real prior incident where `SharingStarted.WhileSubscribed` silently broke a unit test
+(never starts collecting without an active subscriber, so `.value` reads stuck at the seed forever).
+The new `presence`/`nextDueToday` StateFlows were first written with `WhileSubscribed` out of habit —
+caught on a re-read of the README before pushing, switched to `SharingStarted.Eagerly` to match this
+file's own established, hard-won convention.
+
+**Tests added:** `PresenceStateMapperTest` (precedence rules — Emergency always wins, a flash beats
+the mapped state, Offline never interrupts a live turn) and `HomeContextTest` (greeting time-of-day
+logic, next-due selection, 24h→12h formatting) — both pure, Android-free. `VoiceViewModelTest`'s
+factory updated for the two new constructor dependencies.
+
+**Not done in this pass, honestly:** the Listening/Speaking "amplitude response" is a simulated
+envelope, not real microphone/TTS amplitude — a direct, contained follow-up per the ADR. Web has none
+of this yet (Android was treated as primary, matching the earlier audit's own finding that Android is
+usually the platform lagging web, not the reverse, here it's the opposite pattern). No accessibility-
+service (TalkBack) manual verification, no real-device visual check — both impossible without a
+device. `android/README.md`'s own "Definition of Done — Voice" section already had stale "wake-word
+not yet built" / "AI not yet wired" notes predating this work; left as-is rather than rewritten to
+keep this diff scoped, flagged instead with a pointer to this file.

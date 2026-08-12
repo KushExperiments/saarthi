@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Backs Presence's Offline state (NetworkStatusMonitor) — a "normal"
+         permission, granted automatically at install, no runtime prompt. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- WakeWordService requires all three: FOREGROUND_SERVICE is the base
          permission every foreground service needs; FOREGROUND_SERVICE_MICROPHONE
          is the typed permission Android 14+ (API 34) requires for a

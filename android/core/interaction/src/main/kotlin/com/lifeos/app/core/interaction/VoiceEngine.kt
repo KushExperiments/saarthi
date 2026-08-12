@@ -6,7 +6,10 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,12 +33,30 @@ class VoiceEngine @Inject constructor(
     private var ready = false
     private var recognizer: SpeechRecognizer? = null
 
+    private val _speaking = MutableStateFlow(false)
+
+    /** True for the duration of a [speak] utterance — the real signal behind Presence's Speaking state. */
+    val speaking: StateFlow<Boolean> = _speaking
+
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             ready = true
             tts.language = Locale.getDefault()
             tts.setSpeechRate(0.85f) // slow, per Philosophy §1/§4
             tts.setPitch(1.05f) // warm, not robotic-flat
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    _speaking.value = true
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    _speaking.value = false
+                }
+
+                override fun onError(utteranceId: String?) {
+                    _speaking.value = false
+                }
+            })
         }
     }
 

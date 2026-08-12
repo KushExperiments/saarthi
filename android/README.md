@@ -325,3 +325,35 @@ any caregiver-facing surface.
 Out of scope for this batch, by design: everything prior batches already
 excluded, plus AI provider integration, wake word, and the remaining
 device-control voice commands (torch/YouTube/volume) — ported later.
+
+**Note:** wake-word/hands-free listening and Gemini-backed AI understanding
+were both built in later work — the two "not yet" items above are stale.
+Left as-is rather than rewritten here to keep this diff scoped; see
+`progress/JUNO.md` for what's actually current.
+
+## Presence — Juno's living UI (2026-08-12)
+
+`JunoPresence` (`feature/voice/JunoPresence.kt`, replacing the old
+`VoiceOrb`) is Juno's home-screen centerpiece, not a decorative animation.
+Ten states — Idle, Listening, WakeWord, Thinking, Speaking,
+ProcessingAction, Success, Error, Offline, Emergency — each with a
+distinct palette and motion, derived from real signals only:
+`ConversationStateMachine`'s state, `VoiceEngine.speaking` (a new
+`UtteranceProgressListener`-backed signal), `NetworkStatusMonitor`'s real
+connectivity callback, and brief transient flashes (wake-word heard,
+action succeeded/failed) fired from `VoiceViewModel`. See
+`PresenceStateMapper` for the pure derivation logic and
+`docs/adr/0001-presence-lighting-model.md` for why it's lit by one fixed
+virtual light and never rotates.
+
+The Home screen's greeting now reads the elder's own name back from real
+stored memory (`KnowledgeGraph.findByLabel("preferred name")`) — the first
+production caller of the memory system's recall path; previously nothing
+in the live app ever read memory back after writing it (see the
+2026-08-12 audit entry in `progress/JUNO.md`). A contextual "next due"
+line appears only when a medicine is actually unconfirmed today — absent
+entirely otherwise, not a permanent dashboard.
+
+**Known limitation:** the Listening/Speaking "amplitude response" is a
+simulated envelope, not real microphone/TTS amplitude yet — see the ADR's
+Consequences section for the direct follow-up.

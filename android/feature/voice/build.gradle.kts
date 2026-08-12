@@ -32,6 +32,11 @@ dependencies {
     implementation(project(":core:ai"))
     implementation(project(":core:cognitive"))
     implementation(project(":core:interaction"))
+    // Added for M-001's contextual greeting — the first real production
+    // caller of KnowledgeGraph.findByLabel(); previously nothing in the
+    // live app ever read memory back, only wrote to it (see the 2026-08-12
+    // audit's #3 finding in progress/JUNO.md).
+    implementation(project(":core:memory"))
     // Voice sits above Medicines/Contacts and acts on them — matches
     // Architecture's own graph shape (e.g. Emergency depends on Health),
     // dependencies flow one direction, no cycle back.

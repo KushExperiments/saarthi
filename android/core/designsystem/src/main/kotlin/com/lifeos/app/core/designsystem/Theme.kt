@@ -6,7 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColors = lightColorScheme(
-    primary = LifeOSColors.BrandGreen,
+    primary = LifeOSColors.EmberDeep,
     onPrimary = LifeOSColors.LightSurface,
     background = LifeOSColors.LightBackground,
     surface = LifeOSColors.LightSurface,
@@ -17,7 +17,7 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = LifeOSColors.BrandGreenLight,
+    primary = LifeOSColors.Ember,
     onPrimary = LifeOSColors.DarkBackground,
     background = LifeOSColors.DarkBackground,
     surface = LifeOSColors.DarkSurface,
@@ -28,13 +28,12 @@ private val DarkColors = darkColorScheme(
 )
 
 /**
- * LifeOS's single design-system entry point. Every screen in every
- * feature module wraps its content in this — there is no second theme.
+ * Juno's single design-system entry point. Every screen in every feature
+ * module wraps its content in this — there is no second theme.
  *
  * Defaults to dark rather than following the system setting — matches the
- * web app's identity (dark near-black, Gemini-style, decided explicitly
- * after feedback that a light default didn't match), and this was one of
- * the concrete "doesn't match what I expected" gaps between the two apps.
+ * web app's identity and the approved 2026-08-12 redesign (warm umber
+ * near-black, not the earlier neutral/blue-black — see docs/adr/0001).
  */
 @Composable
 fun LifeOSTheme(

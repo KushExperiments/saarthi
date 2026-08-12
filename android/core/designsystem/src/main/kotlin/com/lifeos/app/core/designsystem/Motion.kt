@@ -6,23 +6,32 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 
 /**
- * LifeOS's shared motion language — generalized from what [VoiceOrb] already
- * proved out (slow continuous rotation, a gentle breathing pulse) so other
- * screens can reuse "calm" timing instead of Material's snappier defaults.
- * The whole point of this app's motion is to lower anxiety, not signal
- * responsiveness the way a typical productivity app's motion does.
+ * Juno's shared motion language. The whole point is to lower anxiety, not
+ * signal responsiveness the way a typical productivity app's motion does —
+ * see docs/adr/0001 for why the Presence itself no longer rotates: a
+ * physically-lit sphere under a fixed light looks identical at every
+ * rotation angle, so "spin" was never actually communicating anything.
+ * Motion instead comes from breathing (scale), a small amplitude-driven
+ * pulse on Listening/Speaking, and — Thinking/Processing only — light
+ * drifting inside the volume.
  */
 object LifeOSMotion {
-    /** A held sphere breathing at rest — slow, barely-there. */
-    const val BREATHE_IDLE_MS = 2400
-    const val BREATHE_ACTIVE_MS = 700
+    /** One full breathe cycle, per Presence state — see JunoPresence. */
+    const val BREATHE_IDLE_MS = 2600
+    const val BREATHE_LISTENING_MS = 900
+    const val BREATHE_SPEAKING_MS = 340
+    const val BREATHE_THINKING_MS = 2200
+    const val BREATHE_PROCESSING_MS = 2000
+    const val BREATHE_ERROR_MS = 1800
+    const val BREATHE_EMERGENCY_MS = 1200
 
-    /** The orb's slow ambient spin — a sign of life, not a loading spinner. */
-    const val SPIN_IDLE_MS = 11000
-    const val SPIN_ACTIVE_MS = 4000
+    /** One-shot illumination pulses — not loops. */
+    const val FLASH_WAKE_MS = 450
+    const val FLASH_SUCCESS_MS = 500
 
-    /** Sound-wave ripple cadence while actively listening. */
-    const val RIPPLE_MS = 1600
+    /** Internal volumetric light drift while Thinking/Processing — never a surface rotation. */
+    const val INNER_GLOW_THINKING_MS = 5200
+    const val INNER_GLOW_PROCESSING_MS = 2400
 
     /** Everyday UI transitions (a card appearing, a screen settling) — calmer than Material's ~150-300ms defaults. */
     const val TRANSITION_MS = 400

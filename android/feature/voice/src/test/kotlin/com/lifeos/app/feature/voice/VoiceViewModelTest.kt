@@ -8,6 +8,7 @@ import com.lifeos.app.core.interaction.DialogueManager
 import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.VoiceEngine
 import com.lifeos.app.core.interaction.WakeSignal
+import com.lifeos.app.core.memory.KnowledgeGraph
 import com.lifeos.app.core.testing.MainDispatcherRule
 import com.lifeos.app.core.testing.TestDispatcherProvider
 import com.lifeos.app.feature.contacts.Contact
@@ -16,6 +17,8 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,8 +33,16 @@ class VoiceViewModelTest {
 
     private val medicineRepository = LocalFakeMedicineRepository()
     private val contactRepository = LocalFakeContactRepository()
-    private val voiceEngine = mockk<VoiceEngine>(relaxed = true)
+    private val voiceEngine = mockk<VoiceEngine>(relaxed = true) {
+        every { speaking } returns MutableStateFlow(false)
+    }
     private val dialogueManager = mockk<DialogueManager>()
+    private val knowledgeGraph = mockk<KnowledgeGraph> {
+        coEvery { findByLabel(any()) } returns emptyList()
+    }
+    private val networkStatusMonitor = mockk<NetworkStatusMonitor> {
+        every { observeOnline() } returns flowOf(true)
+    }
 
     private fun viewModel() = VoiceViewModel(
         voiceEngine,
@@ -41,6 +52,8 @@ class VoiceViewModelTest {
         ConversationStateMachine(),
         TestDispatcherProvider(),
         WakeSignal(),
+        knowledgeGraph,
+        networkStatusMonitor,
     )
 
     @Test

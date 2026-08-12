@@ -14,14 +14,18 @@ import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.NamedEntity
 import com.lifeos.app.core.interaction.VoiceEngine
 import com.lifeos.app.core.interaction.WakeSignal
+import com.lifeos.app.core.memory.KnowledgeGraph
 import com.lifeos.app.feature.contacts.Contact
 import com.lifeos.app.feature.contacts.ContactRepository
 import com.lifeos.app.feature.medicines.MedicineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,6 +43,9 @@ data class ConversationTurn(val fromUser: Boolean, val text: String)
 
 private const val MAX_HISTORY_TURNS = 6
 private const val WAKE_SIGNAL_FRESHNESS_MS = 5_000L
+private const val FLASH_WAKE_MS = 500L
+private const val FLASH_SUCCESS_MS = 600L
+private const val FLASH_ERROR_MS = 500L
 
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
@@ -49,6 +56,8 @@ class VoiceViewModel @Inject constructor(
     private val stateMachine: ConversationStateMachine,
     private val dispatchers: DispatcherProvider,
     private val wakeSignal: WakeSignal,
+    private val knowledgeGraph: KnowledgeGraph,
+    private val networkStatusMonitor: NetworkStatusMonitor,
 ) : ViewModel() {
 
     private val _listening = MutableStateFlow(false)
@@ -66,7 +75,35 @@ class VoiceViewModel @Inject constructor(
     private val _overlayVisible = MutableStateFlow(false)
     val overlayVisible: StateFlow<Boolean> = _overlayVisible
 
+    private val _greetingName = MutableStateFlow<String?>(null)
+
+    /** The elder's own name, read back from real stored memory — never a placeholder. Null until found (or if never given). */
+    val greetingName: StateFlow<String?> = _greetingName
+
+    private val _transientFlash = MutableStateFlow<PresenceState?>(null)
+
     val conversationState: StateFlow<ConversationState> = stateMachine.state
+
+    // Eagerly, not WhileSubscribed — this codebase already hit and fixed
+    // exactly this pitfall once (see android/README.md's Voice Definition
+    // of Done): WhileSubscribed never starts collecting without an active
+    // subscriber, so a plain unit test reading `.value` directly sees the
+    // seed value forever. Matches `contacts` below.
+
+    /** What Juno's Presence should show right now — see [PresenceStateMapper]. */
+    val presence: StateFlow<PresenceState> = combine(
+        stateMachine.state,
+        voiceEngine.speaking,
+        networkStatusMonitor.observeOnline(),
+        _transientFlash,
+    ) { conversationState, speaking, online, flash ->
+        PresenceStateMapper.map(conversationState, speaking, online, flash)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, PresenceState.IDLE)
+
+    /** The single next unconfirmed dose today, or null — see [nextDueDescription]. */
+    val nextDueToday: StateFlow<String?> = medicineRepository.observeAll()
+        .map { medicines -> nextDueDescription(medicines) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val contacts: StateFlow<List<Contact>> = contactRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -88,9 +125,29 @@ class VoiceViewModel @Inject constructor(
         viewModelScope.launch {
             wakeSignal.triggered.collect { firedAt ->
                 if (firedAt != 0L && System.currentTimeMillis() - firedAt < WAKE_SIGNAL_FRESHNESS_MS) {
+                    flashPresence(PresenceState.WAKE_WORD, FLASH_WAKE_MS)
                     startListening()
                 }
             }
+        }
+
+        // The very first real production caller of the memory system's
+        // recall path — everything upstream (KnowledgeGraph, the Room
+        // schema, ConfidenceModel) already existed but nothing ever read
+        // it back into a conversation. "preferred name" is exactly the
+        // label OnboardingViewModel.rememberName() writes.
+        viewModelScope.launch(dispatchers.io) {
+            val stored = knowledgeGraph.findByLabel("preferred name").firstOrNull()
+            _greetingName.value = stored?.valueText
+        }
+    }
+
+    /** Shows [state] briefly, then clears — a one-shot pulse, not a loop. */
+    private fun flashPresence(state: PresenceState, durationMs: Long) {
+        viewModelScope.launch {
+            _transientFlash.value = state
+            delay(durationMs)
+            if (_transientFlash.value == state) _transientFlash.value = null
         }
     }
 
@@ -130,20 +187,24 @@ class VoiceViewModel @Inject constructor(
                 is VoiceCommand.Call -> {
                     say("Calling ${command.contact.name}.")
                     _effect.value = VoiceUiEffect.PlaceCall(command.contact)
+                    flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
                     "call"
                 }
                 is VoiceCommand.WhatsApp -> {
                     say("Opening WhatsApp for ${command.contact.name}.")
                     _effect.value = VoiceUiEffect.OpenWhatsApp(command.contact)
+                    flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
                     "whatsapp"
                 }
                 is VoiceCommand.NeedsContact -> {
                     say("Who should I contact? Please add them in Call Someone first.")
+                    flashPresence(PresenceState.ERROR, FLASH_ERROR_MS)
                     "needs_contact"
                 }
                 VoiceCommand.MedicineTaken -> {
                     val confirmed = markEarliestDue()
                     say(if (confirmed) "Well done. I marked your medicine as taken." else "I don't see a medicine due right now.")
+                    if (confirmed) flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
                     "medicine_taken"
                 }
                 VoiceCommand.OpenMedicines -> {
@@ -196,6 +257,7 @@ class VoiceViewModel @Inject constructor(
             }
             DialogueResult.Unhandled -> {
                 say("Sorry, I didn't understand. You can say things like “call beta” or “I took my medicine”.")
+                flashPresence(PresenceState.ERROR, FLASH_ERROR_MS)
                 "none"
             }
         }
@@ -205,6 +267,7 @@ class VoiceViewModel @Inject constructor(
     private suspend fun handleActionPlan(plan: ActionPlan) {
         if (plan.verdict == Verdict.REJECT) {
             say("Sorry, I didn't understand. You can say things like “call beta” or “I took my medicine”.")
+            flashPresence(PresenceState.ERROR, FLASH_ERROR_MS)
             return
         }
         if (plan.verdict == Verdict.ESCALATE) {
@@ -217,17 +280,21 @@ class VoiceViewModel @Inject constructor(
                 val contact = plan.params["person"]?.let { name -> contacts.value.find { it.name == name } }
                 if (contact == null) {
                     say("Who should I contact? Please add them in Call Someone first.")
+                    flashPresence(PresenceState.ERROR, FLASH_ERROR_MS)
                 } else if (plan.action == "call") {
                     say("Calling ${contact.name}.")
                     _effect.value = VoiceUiEffect.PlaceCall(contact)
+                    flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
                 } else {
                     say("Opening WhatsApp for ${contact.name}.")
                     _effect.value = VoiceUiEffect.OpenWhatsApp(contact)
+                    flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
                 }
             }
             "medicine_taken" -> {
                 val confirmed = markEarliestDue()
                 say(if (confirmed) "Well done. I marked your medicine as taken." else "I don't see a medicine due right now.")
+                if (confirmed) flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
             }
             "open_medicines" -> {
                 say("Opening your medicines.")
