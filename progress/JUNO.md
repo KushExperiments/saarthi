@@ -180,3 +180,10 @@ service (TalkBack) manual verification, no real-device visual check — both imp
 device. `android/README.md`'s own "Definition of Done — Voice" section already had stale "wake-word
 not yet built" / "AI not yet wired" notes predating this work; left as-is rather than rewritten to
 keep this diff scoped, flagged instead with a pointer to this file.
+
+**CI result: green on the first push, commit `5e66820`.** Both `Build LifeOS APK` and `Android
+Foundation CI` (which runs `testDebugUnitTest`) succeeded — no compile errors, and
+`PresenceStateMapperTest`/`HomeContextTest`/the updated `VoiceViewModelTest` all passed. Only
+annotations were the same pre-existing, non-blocking workflow-config warnings as every prior run
+(Node 20, `build-root-directory`, `setup-java` v4) — nothing related to this change. M-001 complete,
+waiting on approval before M-002 (Memory Transparency).
