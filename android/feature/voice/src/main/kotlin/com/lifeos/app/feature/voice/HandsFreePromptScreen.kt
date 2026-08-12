@@ -39,12 +39,15 @@ object HandsFreePromptPrefs {
 }
 
 /**
- * A one-time, full-screen decision instead of a small switch buried in a
- * Settings screen nobody would find without being told to look — "Always
- * listen" is a big enough capability (a persistent background microphone)
- * that it deserves a deliberate yes/no moment, not a row in a list. Shown
- * once, right after onboarding; the elder never has to go dig through a
- * menu to make this choice — Juno asks once, up front.
+ * Real voice recognition, not tap-to-talk, is the point — direct feedback:
+ * "I don't want tap to speak, I want voice recognition." This screen no
+ * longer asks yes/no; it requests the permissions hands-free listening
+ * needs immediately, automatically, the moment it appears — the only taps
+ * involved are the OS's own unavoidable permission dialogs, not an
+ * in-app choice to opt in or out. If the elder (or whoever's holding the
+ * phone) denies microphone access at the OS level, a fallback appears so
+ * they're not stuck on this screen forever — recovery, not a first-class
+ * "no thanks" option.
  */
 @Composable
 fun HandsFreePromptScreen(onDone: () -> Unit) {
@@ -52,20 +55,16 @@ fun HandsFreePromptScreen(onDone: () -> Unit) {
     val micPermission = rememberMicrophonePermissionState()
     val notificationPermission = rememberNotificationPermissionState()
     val batteryOptimization = rememberBatteryOptimizationState()
-    var pendingEnable by remember { mutableStateOf(false) }
+    var micRequested by remember { mutableStateOf(false) }
 
-    // Same permission chain SettingsScreen used to run — mic, then
-    // notifications, then a best-effort battery-optimization exemption
-    // (declining that one doesn't block anything, it just means the
-    // service is more exposed to being killed by aggressive OEM battery
-    // managers), then actually start the service.
-    LaunchedEffect(pendingEnable, micPermission.granted, notificationPermission.granted) {
-        if (!pendingEnable) return@LaunchedEffect
+    LaunchedEffect(micPermission.granted, notificationPermission.granted) {
         when {
-            !micPermission.granted -> micPermission.request()
+            !micPermission.granted -> {
+                micRequested = true
+                micPermission.request()
+            }
             !notificationPermission.granted -> notificationPermission.request()
             else -> {
-                pendingEnable = false
                 VoiceSettingsPrefs.setAlwaysListeningEnabled(context, true)
                 if (!batteryOptimization.ignoring) requestIgnoreBatteryOptimizations(context, batteryOptimization)
                 WakeWordService.start(context)
@@ -81,36 +80,47 @@ fun HandsFreePromptScreen(onDone: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Listen for \"Juno\"?",
+            text = "Setting up voice recognition…",
             style = MaterialTheme.typography.headlineLarge,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Juno can listen in the background, even with the screen off, so you " +
-                "can just say \"Juno\" any time you need help — no tapping needed. " +
-                "Shows a notification the whole time this is on, and you can turn it " +
+            text = "Juno listens for you, even with the screen off — just say \"Juno\" any " +
+                "time. Shows a notification the whole time this is on, and you can turn it " +
                 "off any time by saying \"open settings\".",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(40.dp))
-        LifeOSButton(
-            text = "Yes, listen for me",
-            onClick = { pendingEnable = true },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedButton(
-            onClick = {
-                VoiceSettingsPrefs.setAlwaysListeningEnabled(context, false)
-                HandsFreePromptPrefs.markSeen(context)
-                onDone()
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("No thanks, I'll tap to talk")
+
+        // Only appears if the microphone permission was actually denied at
+        // the OS level — a rescue path so a denial doesn't strand the
+        // elder on this screen forever, not an invitation to opt out.
+        if (micRequested && !micPermission.granted) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Juno needs microphone access to listen for you.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            LifeOSButton(
+                text = "Try again",
+                onClick = { micPermission.request() },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = {
+                    VoiceSettingsPrefs.setAlwaysListeningEnabled(context, false)
+                    HandsFreePromptPrefs.markSeen(context)
+                    onDone()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Continue without voice recognition for now")
+            }
         }
     }
 }

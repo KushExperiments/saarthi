@@ -1,11 +1,13 @@
 package com.lifeos.app.feature.voice
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +17,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.lifeos.app.core.interaction.WakeSignal
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -178,4 +181,35 @@ class WakeWordService : Service() {
             context.stopService(Intent(context, WakeWordService::class.java))
         }
     }
+}
+
+/**
+ * Resumes hands-free listening across app/process restarts — without this,
+ * killing the app (or a reboot) would silently and permanently stop
+ * background listening while the user's choice on the hands-free prompt
+ * still says "yes," with no way back short of clearing app data. Wrapped
+ * in try/catch deliberately: this used to live in an unprotected call from
+ * Application.onCreate(), which is a real crash risk (Android 12+ can
+ * reject a foreground-service start depending on exactly how the process
+ * was launched) — a rejection here should silently leave hands-free off,
+ * not crash the entire app on every single future launch.
+ */
+fun restartWakeWordServiceIfEnabled(context: Context) {
+    try {
+        if (VoiceSettingsPrefs.isAlwaysListeningEnabled(context) && hasWakeWordPermissions(context)) {
+            WakeWordService.start(context)
+        }
+    } catch (e: Exception) {
+        // See doc comment — failing to resume hands-free is not worth
+        // taking the whole app down over.
+    }
+}
+
+private fun hasWakeWordPermissions(context: Context): Boolean {
+    val micGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+        PackageManager.PERMISSION_GRANTED
+    val notificationsGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+    return micGranted && notificationsGranted
 }

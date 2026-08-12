@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -46,8 +47,12 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
     val overlayVisible by viewModel.overlayVisible.collectAsStateWithLifecycle()
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()
 
+    val handsFreeOn = remember { VoiceSettingsPrefs.isAlwaysListeningEnabled(context) }
+
     LaunchedEffect(Unit) {
-        viewModel.say("Hello. I am Juno. Tap the circle and talk to me.")
+        viewModel.say(
+            if (handsFreeOn) "Hello. I am Juno. Just say my name any time." else "Hello. I am Juno. Tap the circle and talk to me.",
+        )
     }
 
     LaunchedEffect(effect) {
@@ -99,6 +104,7 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
                 text = when {
                     !micPermission.granted -> "Tap the circle, then allow the microphone"
                     listening -> "Listening…"
+                    handsFreeOn -> "Just say \"Juno\" — or tap the circle"
                     else -> "Tap the circle and talk to me"
                 },
                 style = MaterialTheme.typography.titleMedium,

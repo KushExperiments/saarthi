@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import com.lifeos.app.core.designsystem.LifeOSTheme
 import com.lifeos.app.core.navigation.FeatureNavigation
 import com.lifeos.app.feature.voice.HandsFreePromptPrefs
 import com.lifeos.app.feature.voice.HandsFreePromptScreen
+import com.lifeos.app.feature.voice.restartWakeWordServiceIfEnabled
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -39,6 +41,27 @@ class MainActivity : ComponentActivity() {
             LifeOSTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val context = LocalContext.current
+
+                    // Resumes hands-free listening across app/process
+                    // restarts (it only otherwise starts reactively when
+                    // the onboarding prompt is answered). This used to
+                    // live in LifeOSApplication.onCreate() — moved here and
+                    // wrapped in try/catch after discovering that starting
+                    // a foreground service unconditionally in
+                    // Application.onCreate(), before anything else in the
+                    // app exists, is a real crash risk: Android 12+ can
+                    // reject a foreground-service start depending on
+                    // exactly how/why the process was launched, and an
+                    // uncaught exception there would crash on every single
+                    // launch with no way back in short of clearing app
+                    // data. A LaunchedEffect inside a live Activity's
+                    // composition is a more reliably-foreground context,
+                    // and the try/catch means even a rejection here just
+                    // silently leaves hands-free off instead of crashing.
+                    LaunchedEffect(Unit) {
+                        restartWakeWordServiceIfEnabled(context)
+                    }
+
                     var onboardingSeen by remember { mutableStateOf(OnboardingPrefs.hasSeenOnboarding(context)) }
                     var handsFreePromptSeen by remember { mutableStateOf(HandsFreePromptPrefs.hasSeenPrompt(context)) }
 
@@ -50,10 +73,11 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     } else if (!handsFreePromptSeen) {
-                        // A one-time, deliberate yes/no screen for a real
-                        // capability (a persistent background microphone) —
-                        // not a switch buried in a Settings menu nobody
-                        // would find without being told to look for it.
+                        // Requests mic/notification access and turns on
+                        // hands-free listening automatically — no in-app
+                        // yes/no choice, per direct feedback that this
+                        // should be real voice recognition, not
+                        // tap-to-talk with an opt-in step in the way.
                         HandsFreePromptScreen(onDone = { handsFreePromptSeen = true })
                     } else {
                         // PIN lock removed: it was gating the entire app
