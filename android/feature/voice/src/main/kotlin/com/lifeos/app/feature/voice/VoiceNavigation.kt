@@ -21,7 +21,10 @@ class VoiceNavigation @Inject constructor() : FeatureNavigation {
             VoiceHomeScreen(navController = navController)
         }
         composable(SettingsRoute.route) {
-            SettingsScreen()
+            SettingsScreen(navController = navController)
+        }
+        composable(MemoryRoute.route) {
+            MemoryScreen()
         }
     }
 }

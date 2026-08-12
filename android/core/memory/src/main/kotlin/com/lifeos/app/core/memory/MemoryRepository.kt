@@ -2,8 +2,13 @@ package com.lifeos.app.core.memory
 
 import com.lifeos.app.core.data.MemoryNodeEntity
 import com.lifeos.app.core.data.MemoryProvenanceEntity
+import kotlinx.coroutines.flow.Flow
 
 interface MemoryRepository {
+
+    /** Every active memory, most recently updated first — the "Memory list" surface (M-002). */
+    fun observeAll(): Flow<List<MemoryNodeEntity>>
+
     suspend fun remember(
         category: MemoryCategory,
         label: String,

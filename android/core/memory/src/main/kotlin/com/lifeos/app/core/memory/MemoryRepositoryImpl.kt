@@ -23,6 +23,8 @@ class MemoryRepositoryImpl @Inject constructor(
     private val retrievalEngine: RetrievalEngine,
 ) : MemoryRepository {
 
+    override fun observeAll() = nodeDao.observeAll()
+
     override suspend fun remember(
         category: MemoryCategory,
         label: String,

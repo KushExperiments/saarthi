@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.lifeos.app.core.ui.DecisionExplanationSheet
 import com.lifeos.app.core.ui.LifeOSCard
 
@@ -27,12 +28,33 @@ import com.lifeos.app.core.ui.LifeOSCard
  * without being told to look for it.
  */
 @Composable
-fun SettingsScreen(decisionExplanationViewModel: DecisionExplanationViewModel = hiltViewModel()) {
+fun SettingsScreen(navController: NavHostController, decisionExplanationViewModel: DecisionExplanationViewModel = hiltViewModel()) {
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Text(text = "Settings", style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(24.dp))
 
+        MemoryCard(onOpen = { navController.navigate(MemoryRoute.route) })
+        Spacer(modifier = Modifier.height(16.dp))
         DecisionExplanationCard(decisionExplanationViewModel)
+    }
+}
+
+@Composable
+private fun MemoryCard(onOpen: () -> Unit) {
+    LifeOSCard {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "What I Remember", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "See, correct, or forget anything Juno remembers about you.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
+                Text("Open")
+            }
+        }
     }
 }
 

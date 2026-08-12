@@ -9,6 +9,8 @@ import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.VoiceEngine
 import com.lifeos.app.core.interaction.WakeSignal
 import com.lifeos.app.core.memory.KnowledgeGraph
+import com.lifeos.app.core.memory.MemoryCategory
+import com.lifeos.app.core.memory.MemorySource
 import com.lifeos.app.core.testing.MainDispatcherRule
 import com.lifeos.app.core.testing.TestDispatcherProvider
 import com.lifeos.app.feature.contacts.Contact
@@ -33,6 +35,7 @@ class VoiceViewModelTest {
 
     private val medicineRepository = LocalFakeMedicineRepository()
     private val contactRepository = LocalFakeContactRepository()
+    private val memoryRepository = LocalFakeMemoryRepository()
     private val voiceEngine = mockk<VoiceEngine>(relaxed = true) {
         every { speaking } returns MutableStateFlow(false)
     }
@@ -54,6 +57,7 @@ class VoiceViewModelTest {
         WakeSignal(),
         knowledgeGraph,
         networkStatusMonitor,
+        memoryRepository,
     )
 
     @Test
@@ -162,5 +166,73 @@ class VoiceViewModelTest {
         // The turn isn't actually finished — it's waiting on the elder to confirm,
         // so the conversation must not silently settle all the way back to idle.
         assertEquals(ConversationState.WAITING, viewModel.conversationState.value)
+    }
+
+    @Test
+    fun `remembering a fact stores it verbatim and confirms it back`() = runBlocking {
+        val onResultSlot = slot<(String) -> Unit>()
+        every { voiceEngine.listen(capture(onResultSlot), any(), any()) } answers {
+            onResultSlot.captured.invoke("remember that my daughter lives in Pune")
+        }
+
+        val viewModel = viewModel()
+        viewModel.startListening()
+
+        val stored = memoryRepository.observeAll().value.single()
+        assertEquals("my daughter lives in Pune", stored.valueText)
+        assertTrue(viewModel.conversation.value.any { !it.fromUser && it.text.contains("my daughter lives in Pune") })
+    }
+
+    @Test
+    fun `recalling about a topic that was never remembered says so honestly, never invents an answer`() = runBlocking {
+        val onResultSlot = slot<(String) -> Unit>()
+        every { voiceEngine.listen(capture(onResultSlot), any(), any()) } answers {
+            onResultSlot.captured.invoke("what do you remember about my birthday")
+        }
+
+        val viewModel = viewModel()
+        viewModel.startListening()
+
+        assertTrue(viewModel.conversation.value.any { !it.fromUser && it.text.contains("don't have anything remembered") })
+    }
+
+    @Test
+    fun `forget that removes the most recently referenced memory`() = runBlocking {
+        memoryRepository.remember(
+            category = MemoryCategory.RELATIONSHIPS,
+            label = "daughter",
+            valueText = "my daughter lives in Pune",
+            source = MemorySource.USER_STATED,
+            sourceDetail = "test setup",
+            now = 0L,
+        )
+        val onResultSlot = slot<(String) -> Unit>()
+        every { voiceEngine.listen(capture(onResultSlot), any(), any()) } answers {
+            onResultSlot.captured.invoke("what do you remember about my daughter")
+        }
+        val viewModel = viewModel()
+        viewModel.startListening()
+        assertEquals(1, memoryRepository.observeAll().value.size)
+
+        every { voiceEngine.listen(capture(onResultSlot), any(), any()) } answers {
+            onResultSlot.captured.invoke("forget that")
+        }
+        viewModel.startListening()
+
+        assertTrue(memoryRepository.observeAll().value.isEmpty())
+        assertTrue(viewModel.conversation.value.any { !it.fromUser && it.text.contains("forgotten") })
+    }
+
+    @Test
+    fun `forget that with nothing referenced yet asks for clarification instead of forgetting at random`() = runBlocking {
+        val onResultSlot = slot<(String) -> Unit>()
+        every { voiceEngine.listen(capture(onResultSlot), any(), any()) } answers {
+            onResultSlot.captured.invoke("forget that")
+        }
+
+        val viewModel = viewModel()
+        viewModel.startListening()
+
+        assertTrue(viewModel.conversation.value.any { !it.fromUser && it.text.contains("not sure what you mean") })
     }
 }

@@ -14,7 +14,10 @@ import com.lifeos.app.core.interaction.DialogueResult
 import com.lifeos.app.core.interaction.NamedEntity
 import com.lifeos.app.core.interaction.VoiceEngine
 import com.lifeos.app.core.interaction.WakeSignal
+import com.lifeos.app.core.data.MemoryNodeEntity
 import com.lifeos.app.core.memory.KnowledgeGraph
+import com.lifeos.app.core.memory.MemoryRepository
+import com.lifeos.app.core.memory.MemorySource
 import com.lifeos.app.feature.contacts.Contact
 import com.lifeos.app.feature.contacts.ContactRepository
 import com.lifeos.app.feature.medicines.MedicineRepository
@@ -36,6 +39,7 @@ sealed interface VoiceUiEffect {
     data class OpenWhatsApp(val contact: Contact) : VoiceUiEffect
     data object NavigateToMedicines : VoiceUiEffect
     data object NavigateToSettings : VoiceUiEffect
+    data object NavigateToMemory : VoiceUiEffect
 }
 
 /** One line of the running conversation shown in [ConversationOverlay]. */
@@ -58,6 +62,7 @@ class VoiceViewModel @Inject constructor(
     private val wakeSignal: WakeSignal,
     private val knowledgeGraph: KnowledgeGraph,
     private val networkStatusMonitor: NetworkStatusMonitor,
+    private val memoryRepository: MemoryRepository,
 ) : ViewModel() {
 
     private val _listening = MutableStateFlow(false)
@@ -81,6 +86,11 @@ class VoiceViewModel @Inject constructor(
     val greetingName: StateFlow<String?> = _greetingName
 
     private val _transientFlash = MutableStateFlow<PresenceState?>(null)
+
+    // The memory most recently created or surfaced in conversation — what
+    // "forget that" and "why did you remember this" refer to when the user
+    // doesn't name a topic explicitly. Cleared once forgotten.
+    private val _lastMemoryContext = MutableStateFlow<MemoryNodeEntity?>(null)
 
     val conversationState: StateFlow<ConversationState> = stateMachine.state
 
@@ -217,6 +227,30 @@ class VoiceViewModel @Inject constructor(
                     _effect.value = VoiceUiEffect.NavigateToSettings
                     "open_settings"
                 }
+                is VoiceCommand.Remember -> {
+                    handleRemember(command.statement)
+                    "remember"
+                }
+                is VoiceCommand.RecallAbout -> {
+                    handleRecallAbout(command.topic)
+                    "recall"
+                }
+                VoiceCommand.ShowMemories -> {
+                    handleShowMemories()
+                    "show_memories"
+                }
+                VoiceCommand.ForgetLast -> {
+                    handleForgetLast()
+                    "forget"
+                }
+                is VoiceCommand.ForgetAbout -> {
+                    handleForgetAbout(command.topic)
+                    "forget"
+                }
+                VoiceCommand.WhyRemembered -> {
+                    handleWhyRemembered()
+                    "why_remembered"
+                }
                 is VoiceCommand.Unrecognized -> handleViaDialogueManager(transcript)
             }
             settleState(resolvedAction)
@@ -307,6 +341,88 @@ class VoiceViewModel @Inject constructor(
             "help" -> say("I'm here. Tell me what's wrong, or say a family member's name to call them.")
             else -> say("I understand, but I can't do that yet.")
         }
+    }
+
+    /**
+     * Stores exactly what the user said — never routed through the AI, and
+     * never paraphrased or embellished (M-002: "the system must never
+     * silently invent personal facts"). [MemoryCategoryGuesser] is an
+     * honest heuristic, not a claim of understanding; wrong guesses are
+     * correctable later in the Memory screen.
+     */
+    private suspend fun handleRemember(statement: String) {
+        val category = MemoryCategoryGuesser.guessCategory(statement)
+        val label = MemoryCategoryGuesser.guessLabel(statement)
+        val node = memoryRepository.remember(
+            category = category,
+            label = label,
+            valueText = statement,
+            source = MemorySource.USER_STATED,
+            sourceDetail = "Said during conversation",
+            now = System.currentTimeMillis(),
+        )
+        _lastMemoryContext.value = node
+        val sensitivityNote = if (isSensitiveCategory(category)) " I'll keep that private." else ""
+        say("I'll remember that — $statement.$sensitivityNote")
+        flashPresence(PresenceState.SUCCESS, FLASH_SUCCESS_MS)
+    }
+
+    /** Never fabricates an answer — an empty result is spoken honestly, not filled in. */
+    private suspend fun handleRecallAbout(topic: String) {
+        val results = memoryRepository.recall(query = topic, now = System.currentTimeMillis())
+        val top = results.firstOrNull()
+        if (top == null) {
+            say("I don't have anything remembered about that yet.")
+            flashPresence(PresenceState.ERROR, FLASH_ERROR_MS)
+        } else {
+            _lastMemoryContext.value = top.node
+            say(top.node.valueText)
+        }
+    }
+
+    private suspend fun handleShowMemories() {
+        val results = memoryRepository.recall(query = "", now = System.currentTimeMillis())
+        if (results.isEmpty()) {
+            say("I don't have anything remembered yet.")
+            return
+        }
+        val top = results.take(3)
+        _lastMemoryContext.value = top.first().node
+        say("Here's what I remember: " + top.joinToString(" ") { "${it.node.valueText}." })
+        _effect.value = VoiceUiEffect.NavigateToMemory
+    }
+
+    private suspend fun handleForgetLast() {
+        val target = _lastMemoryContext.value
+        if (target == null) {
+            say("I'm not sure what you mean — what should I forget?")
+            return
+        }
+        memoryRepository.forget(target.id, reason = "User asked to forget", now = System.currentTimeMillis())
+        _lastMemoryContext.value = null
+        say("OK, I've forgotten that.")
+    }
+
+    private suspend fun handleForgetAbout(topic: String) {
+        val target = memoryRepository.recall(query = topic, now = System.currentTimeMillis()).firstOrNull()?.node
+        if (target == null) {
+            say("I don't have anything remembered about that.")
+            return
+        }
+        memoryRepository.forget(target.id, reason = "User asked to forget", now = System.currentTimeMillis())
+        if (_lastMemoryContext.value?.id == target.id) _lastMemoryContext.value = null
+        say("OK, I've forgotten that.")
+    }
+
+    /** Reads real stored provenance — never synthesizes an explanation after the fact. */
+    private suspend fun handleWhyRemembered() {
+        val target = _lastMemoryContext.value
+        if (target == null) {
+            say("I'm not sure which memory you mean — ask me about something first.")
+            return
+        }
+        val provenance = memoryRepository.whyRemembered(target.id).firstOrNull()
+        say(if (provenance == null) "I don't have a record of why I remembered that." else provenanceExplanation(provenance))
     }
 
     /** Walks UNDERSTANDING -> THINKING -> EXECUTING -> IDLE now that a turn has resolved to [resolvedAction]. */

@@ -60,4 +60,56 @@ class CommandRouterTest {
 
         assertTrue(result is VoiceCommand.Unrecognized)
     }
+
+    @Test
+    fun `remember that extracts the statement verbatim, preserving original casing`() {
+        val result = CommandRouter.route("remember that my daughter lives in Pune", contacts)
+
+        assertEquals(VoiceCommand.Remember("my daughter lives in Pune"), result)
+    }
+
+    @Test
+    fun `remember without a leading that still extracts the statement`() {
+        val result = CommandRouter.route("please remember my locker code is 4471", contacts)
+
+        assertEquals(VoiceCommand.Remember("my locker code is 4471"), result)
+    }
+
+    @Test
+    fun `what do you remember about X extracts the topic, not ShowMemories`() {
+        val result = CommandRouter.route("what do you remember about my daughter", contacts)
+
+        assertEquals(VoiceCommand.RecallAbout("my daughter"), result)
+    }
+
+    @Test
+    fun `what do you remember about me maps to ShowMemories, not a literal topic`() {
+        val result = CommandRouter.route("what do you remember about me", contacts)
+
+        assertEquals(VoiceCommand.ShowMemories, result)
+    }
+
+    @Test
+    fun `show me my important memories maps to ShowMemories`() {
+        val result = CommandRouter.route("show me my important memories", contacts)
+
+        assertEquals(VoiceCommand.ShowMemories, result)
+    }
+
+    @Test
+    fun `forget that with no topic maps to ForgetLast`() {
+        assertEquals(VoiceCommand.ForgetLast, CommandRouter.route("forget that", contacts))
+    }
+
+    @Test
+    fun `forget about a topic maps to ForgetAbout with that topic`() {
+        val result = CommandRouter.route("forget about my locker code", contacts)
+
+        assertEquals(VoiceCommand.ForgetAbout("my locker code"), result)
+    }
+
+    @Test
+    fun `why did you remember maps to WhyRemembered`() {
+        assertEquals(VoiceCommand.WhyRemembered, CommandRouter.route("why did you remember that", contacts))
+    }
 }

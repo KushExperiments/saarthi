@@ -69,6 +69,7 @@ fun VoiceHomeScreen(navController: NavHostController, viewModel: VoiceViewModel 
             is VoiceUiEffect.OpenWhatsApp -> ContactActions.openWhatsApp(context, current.contact)
             VoiceUiEffect.NavigateToMedicines -> navController.navigate(MedicinesRoute.route)
             VoiceUiEffect.NavigateToSettings -> navController.navigate(SettingsRoute.route)
+            VoiceUiEffect.NavigateToMemory -> navController.navigate(MemoryRoute.route)
             null -> Unit
         }
         if (current != null) viewModel.consumeEffect()

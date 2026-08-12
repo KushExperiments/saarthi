@@ -187,3 +187,65 @@ Foundation CI` (which runs `testDebugUnitTest`) succeeded — no compile errors,
 annotations were the same pre-existing, non-blocking workflow-config warnings as every prior run
 (Node 20, `build-root-directory`, `setup-java` v4) — nothing related to this change. M-001 complete,
 waiting on approval before M-002 (Memory Transparency).
+
+## 2026-08-12 — M-002 "Memory Transparency": the memory system becomes a real conversation
+
+Turns the already-built (but, per the 2026-08-12 audit, never-called) memory backend into something
+the elder can actually talk to. All five example utterances from the milestone brief work:
+"remember that my daughter lives in Pune," "what do you remember about my daughter," "forget that,"
+"why did you remember this," "show me my important memories."
+
+**Deliberate architectural decision, not covered by a separate ADR (judged not significant enough —
+no new module, no new pattern, just a new consumer of an existing interface):** memory intents are
+matched by `CommandRouter` — the deterministic floor tier — and never fall through to the AI/
+DecisionEngine path. Given M-002's own explicit requirement ("the system must never silently invent
+personal facts... when uncertain, it must say so") and the standing audit finding that the live
+Gemini system prompt has zero safety guardrails, routing "remember X" through an AI that might
+paraphrase, embellish, or hallucinate would directly violate that requirement. The deterministic
+router either matches the phrase and stores *exactly* what the user said, or doesn't match at all.
+
+**What's real, not simulated:** `MemoryCategoryGuesser` is an honest keyword heuristic (health words →
+HEALTH, "daughter"/"son"/etc. → RELATIONSHIPS, and so on, default LIFE_STORY) — explicitly documented
+as a starting guess, not a claim of understanding, correctable in the new `MemoryScreen`. Sensitive
+categories (HIGH/CRITICAL tier — health, relationships, life story, safety) get a spoken privacy
+note ("I'll keep that private.") when remembered — a modest, honest first step on M-002's "sensitive-
+memory handling" requirement; a real permissions system waits for M-005, where there's actually a
+caregiver to share with.
+
+**Context tracking, new:** `VoiceViewModel` now tracks the most recently created-or-recalled memory
+(`_lastMemoryContext`) so "forget that" and "why did you remember this" resolve their implicit
+referent correctly — asks for clarification rather than guessing if nothing's been discussed yet
+("I'm not sure what you mean — what should I forget?").
+
+**New `MemoryScreen`** (voice-reachable — "show me my important memories" navigates there — and from
+a new card in Settings) — every active memory, category + confidence shown inline (never hidden
+behind a tap), Correct and Forget as first-class per-row actions. Built directly from the same
+`LifeOSListItem`/`LifeOSCard` primitives `MedicinesListScreen`/`ContactsListScreen` already use —
+deliberately not a new visual language, since the full icon/emoji redesign from the approved spec
+hasn't been rolled out to any existing screen yet either (still using emoji glyphs like the rest of
+the app, for consistency with what exists today, not the approved future direction — a whole-app
+icon migration is its own separate task, not something to piecemeal into one new screen).
+
+**Real bug caught before pushing, by hand:** the first draft of `CommandRouter`'s memory routing had
+two bugs, both caught on a careful re-read (no compiler here to catch them): (1) checking a bare
+`SHOW_MEMORIES` trigger list *before* the topic-extraction logic meant the substring "what do you
+remember" (present in any "what do you remember about X" phrase) always shadowed the more specific
+extraction — every topic query was misrouted to "show me everything" instead of the actual topic.
+Fixed by reordering so extraction runs first. (2) The extraction itself ran against the
+fully-lowercased, punctuation-stripped copy of the transcript used for keyword *detection* — meaning
+"remember that my daughter lives in **Pune**" would have stored "pune" lowercased. Fixed by searching
+case-insensitively but slicing the return value from the *original* transcript, preserving casing —
+proper nouns now survive intact.
+
+**`MemoryRepository` gained one new method**, `observeAll()` — a direct passthrough to the DAO's
+already-existing `active = 1 ORDER BY updatedAt DESC` query, needed for the Memory screen's live list
+and the "show me my important memories" spoken summary. No new architecture, no new storage — reusing
+what was already there, per the milestone's own explicit instruction not to build a second memory
+system.
+
+**Not done in this pass:** no voice-driven correction (correcting a memory requires the Memory
+screen's text field for now — "no I meant X" as a spoken follow-up isn't wired). Category guessing is
+English-centric; the Hindi keyword coverage from `CommandRouter`'s call/medicine matching wasn't
+extended to `MemoryCategoryGuesser` yet. No caregiver-visible "sensitive" enforcement — the privacy
+note is spoken, not yet gating any actual sharing mechanism (correctly deferred to M-005, since no
+caregiver surface exists to share with yet).
